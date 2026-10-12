@@ -1,0 +1,125 @@
+syntax = "proto3";
+
+message UserProfile {
+    string userName = 2;
+    uint32 rank = 3;
+    string introduction = 5;
+    UserSituationList mainDeckUserSituations = 101;
+    UserAreaItemList enabledUserAreaItems = 102;
+    MapKeyUint32ValueUint32 bandRankMap = 103;
+    UserHighScoreRating userHighScoreRating = 106;
+    UserDeck mainUserDeck = 107;
+    UserProfileSituation userProfileSituation = 108;
+    UserProfileDegreeMap userProfileDegreeMap = 109;
+    UserDeckTotalRatingMap userDeckTotalRatingMap = 112;
+    MapKeyUint32ValueUint32 stageChallengeAchievementConditionsMap = 113;
+    UserMusicClearInfoMap userMusicClearInfoMap = 114;
+    UserCharacterRankMap userCharacterRankMap = 115;
+}
+
+message UserAppendParameter {
+    uint32 situationId = 2;
+    uint32 performance = 3;
+    uint32 technique = 4;
+    uint32 visual = 5;
+    uint32 characterPotentialPerformance = 6;
+    uint32 characterPotentialTechnique = 7;
+    uint32 characterPotentialVisual = 8;
+    uint32 characterBonusPerformance = 9;
+    uint32 characterBonusTechnique = 10;
+    uint32 characterBonusVisual = 11;
+}
+
+message UserDeck {
+    string deckName = 2;
+    uint32 leader = 3;
+}
+
+message UserProfileDegree {
+    uint32 degreeId = 3;
+}
+
+message UserProfileDegreeMap {
+    map<string, UserProfileDegree> entries = 1;
+}
+
+message UserProfileSituation {
+    uint32 situationId = 2;
+    string illust = 3;
+}
+
+message UserSituation {
+    uint32 situationId = 2;
+    uint32 level = 3;
+    string trainingStatus = 7;
+    string illust = 9;
+    uint32 skillLevel = 11;
+    UserAppendParameter userAppendParameter = 12;
+    uint32 limitBreakRank = 13;
+}
+
+message UserSituationList {
+    repeated UserSituation entries = 1;
+}
+
+message MapKeyUint32ValueUint32 {
+    map<uint32, uint32> entries = 1;
+}
+
+message UserAreaItem {
+    uint32 areaItemId = 2;
+}
+
+message UserAreaItemList {
+    repeated UserAreaItem entries = 1;
+}
+
+message UserCharacterRank {
+    uint32 rank = 1;
+}
+
+message UserCharacterRankMap {
+    map<uint32, UserCharacterRank> entries = 1;
+}
+
+message UserDeckTotalRating {
+    string rank = 1;
+    uint32 score = 2;
+    uint32 level = 3;
+}
+
+message UserDeckTotalRatingMap {
+    map<uint32, UserDeckTotalRating> entries = 1;
+}
+
+message UserHighScoreMusicRating {
+    uint32 musicId = 1;
+    string difficulty = 2;
+    uint32 rating = 3;
+}
+
+message UserHighScoreMusicRatingList {
+    repeated UserHighScoreMusicRating entries = 1;
+}
+
+message UserHighScoreRating {
+    UserHighScoreMusicRatingList userPoppinPartyHighScoreMusicList = 1;
+    UserHighScoreMusicRatingList userAfterglowHighScoreMusicList = 2;
+    UserHighScoreMusicRatingList userPastelPalettesHighScoreMusicList = 3;
+    UserHighScoreMusicRatingList userHelloHappyWorldHighScoreMusicList = 4;
+    UserHighScoreMusicRatingList userRoseliaHighScoreMusicList = 5;
+    UserHighScoreMusicRatingList userOtherHighScoreMusicList = 6;
+    UserHighScoreMusicRatingList userMorfonicaHighScoreMusicList = 7;
+    UserHighScoreMusicRatingList userRaiseASuilenHighScoreMusicList = 8;
+    UserHighScoreMusicRatingList userMyGOScoreMusicList = 9;
+}
+
+message UserMusicClearInfo {
+  uint32 clearedMusicCount = 1;
+  uint32 fullComboMusicCount = 2;
+  uint32 allPerfectMusicCount = 3;
+}
+
+message UserMusicClearInfoMap {
+  map<string, UserMusicClearInfo> entries = 1;
+}

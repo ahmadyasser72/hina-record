@@ -1,0 +1,12 @@
+version: v2
+plugins:
+  - local: node_modules/.bin/protoc-gen-es
+    out: src/bang-dream-gbp/gen
+    opt:
+      - target=ts
+      - json_types=true
+managed:
+  enabled: true
+  override:
+    - field_option: jstype
+      value: JS_STRING
