@@ -5,28 +5,28 @@
 	"dependencies": {
 		"@libsql/client": "0.18.0",
 		"@tailwindcss/vite": "4.3.3",
-		"@trigger.dev/sdk": "4.7.2",
+		"@trigger.dev/sdk": "4.7.3",
 		"@upstash/redis": "1.39.0",
-		"daisyui": "5.7.47",
+		"daisyui": "5.7.48",
 		"dayjs": "1.11.23",
-		"drizzle-orm": "1.0.0-rc.4",
+		"drizzle-orm": "1.0.0-rc.5-ab785fc",
 		"es-toolkit": "1.52.0",
 		"tailwindcss": "4.3.3",
-		"zod": "4.6.5"
+		"zod": "4.6.7"
 	},
 	"devDependencies": {
 		"@bufbuild/buf": "1.73.0",
 		"@bufbuild/protoc-gen-es": "2.16.0",
 		"@ianvs/prettier-plugin-sort-imports": "4.7.1",
-		"@trigger.dev/build": "4.7.2",
+		"@trigger.dev/build": "4.7.3",
 		"@types/bun": "1.4.3",
-		"@types/node": "26.6.4",
+		"@types/node": "26.6.5",
 		"@xeonlink/prettier-plugin-organize-attributes": "1.1.0",
-		"drizzle-kit": "1.0.0-rc.4",
-		"prettier": "3.9.9",
+		"drizzle-kit": "1.0.0-rc.5-ab785fc",
+		"prettier": "3.9.10",
 		"prettier-plugin-astro": "0.14.1",
 		"prettier-plugin-packagejson": "3.0.2",
 		"prettier-plugin-tailwindcss": "0.7.2",
-		"wrangler": "4.110.0"
+		"wrangler": "4.149.0"
 	}
 }
