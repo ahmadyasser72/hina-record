@@ -1,5 +1,4 @@
 import { beforeAll, describe, test } from "bun:test";
-import { groupBy } from "es-toolkit";
 import z, { ZodError } from "zod";
 
 import { type UserProfile } from "#gbp/gen/profile_pb";
@@ -16,22 +15,16 @@ import {
 describe("parse", () => {
 	const latest = [] as UserProfile[];
 	beforeAll(async () => {
-		const lastUpdated = groupBy(
-			Object.entries(
-				z
-					.record(z.string(), z.string())
-					.parse(await redis().hgetall(GBP.playersLastUpdated)),
-			),
-			([, snapshotDate]) => snapshotDate,
-		);
-
 		const snapshots = await db().query.profileSnapshots.findMany({
 			columns: { proto: true },
 			where: {
-				OR: Object.entries(lastUpdated).map(([snapshotDate, uids]) => ({
-					uid: { in: uids.map(([uid]) => uid) },
-					snapshotDate,
-				})),
+				id: {
+					in: Object.values(
+						z
+							.record(z.string(), z.coerce.number())
+							.parse(await redis().hgetall(GBP.playersLatest)),
+					),
+				},
 			},
 		});
 		latest.push(...snapshots.map(({ proto }) => proto));

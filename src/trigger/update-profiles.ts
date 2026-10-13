@@ -112,14 +112,14 @@ const updateProfile = schemaTask({
 			.insert(profileSnapshots)
 			.values(snapshots)
 			.onConflictDoNothing()
-			.returning({ uid: profileSnapshots.uid });
+			.returning({ id: profileSnapshots.id, uid: profileSnapshots.uid });
 		if (changed.length === 0) return;
 
 		await tags.add(`upsert_${changed.length}`);
 		metadata.root.append("changed", changed);
 		await redis().hset(
-			GBP.playersLastUpdated,
-			Object.fromEntries(changed.map((uid) => [uid, today])),
+			GBP.playersLatest,
+			Object.fromEntries(changed.map(({ uid, id }) => [uid, id])),
 		);
 	},
 });

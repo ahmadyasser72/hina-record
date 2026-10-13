@@ -17,6 +17,6 @@ export const GBP = {
 	credentials: "gbp:credentials",
 	credentialsRequest: "gbp:credentials:request",
 	players: "gbp:players",
-	playersLastUpdated: "gbp:players:last-updated",
+	playersLatest: "gbp:players:latest",
 	maintenance: "gbp:maintenance",
-};
+} as const;
