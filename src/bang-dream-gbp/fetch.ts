@@ -1,10 +1,11 @@
 import { createCipheriv, createDecipheriv } from "node:crypto";
 
-import { fromBinary, fromJson, toBinary, toJson } from "@bufbuild/protobuf";
+import { fromBinary, fromJson, toBinary } from "@bufbuild/protobuf";
 import { AbortTaskRunError, logger, wait } from "@trigger.dev/sdk";
 import { limitAsync, randomInt, retry } from "es-toolkit";
 
 import { GBP, redis } from "#lib/db";
+import { hash } from "#lib/hash";
 import {
 	UserAuthRequestSchema,
 	type UserAuthRequestJson,
@@ -50,8 +51,11 @@ export const bangDream = {
 				span.setAttribute?.("typeName", UserProfileSchema.typeName);
 
 				const output = fromBinary(UserProfileSchema, response.bytes);
-				const json = toJson(UserProfileSchema, output);
-				return { data: output, json, response: { ...auth, token: newToken } };
+				return {
+					data: output,
+					hash: hash.h32Raw(response.bytes).toString(16),
+					response: { ...auth, token: newToken },
+				};
 			});
 		});
 	},

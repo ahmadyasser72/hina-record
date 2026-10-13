@@ -82,29 +82,29 @@ const updateProfile = schemaTask({
 		for (const uid of uids.map(String)) {
 			const profile = await bangDream.profile(version, credentials, uid);
 			credentials.token = profile.response.token;
-			if ("json" in profile && "data" in profile) {
-				const { data, json } = profile;
-				snapshots.push({
-					uid,
-					snapshotDate: today,
-					json,
 
-					username: data.userName,
-					introduction: data.introduction,
-					rank: data.rank,
-					bandRank: parseBandRank(data.bandRankMap),
-					characterRank: parseCharacterRank(data.userCharacterRankMap),
-					deckRating: parseDeckRating(data.userDeckTotalRatingMap),
-					highScoreRating: parseHighScoreRating(data.userHighScoreRating),
-					musicClear: parseMusicClear(data.userMusicClearInfoMap),
-					profileCard: data.userProfileSituation
-						? pick(data.userProfileSituation, ["situationId", "illust"])
-						: null,
-					stageChallenge: parseStageChallenge(
-						data.stageChallengeAchievementConditionsMap,
-					),
-				});
-			}
+			const { data, hash } = profile;
+			snapshots.push({
+				uid,
+				snapshotDate: today,
+				proto: data,
+				hash,
+
+				username: data.userName,
+				introduction: data.introduction,
+				rank: data.rank,
+				bandRank: parseBandRank(data.bandRankMap),
+				characterRank: parseCharacterRank(data.userCharacterRankMap),
+				deckRating: parseDeckRating(data.userDeckTotalRatingMap),
+				highScoreRating: parseHighScoreRating(data.userHighScoreRating),
+				musicClear: parseMusicClear(data.userMusicClearInfoMap),
+				profileCard: data.userProfileSituation
+					? pick(data.userProfileSituation, ["situationId", "illust"])
+					: null,
+				stageChallenge: parseStageChallenge(
+					data.stageChallengeAchievementConditionsMap,
+				),
+			});
 		}
 		if (snapshots.length === 0) return;
 

@@ -1,9 +1,8 @@
-import { fromJson } from "@bufbuild/protobuf";
 import { beforeAll, describe, test } from "bun:test";
 import { groupBy } from "es-toolkit";
 import z, { ZodError } from "zod";
 
-import { UserProfileSchema, type UserProfile } from "#gbp/gen/profile_pb";
+import { type UserProfile } from "#gbp/gen/profile_pb";
 import { db, GBP, redis } from "#lib/db";
 import {
 	parseBandRank,
@@ -27,7 +26,7 @@ describe("parse", () => {
 		);
 
 		const snapshots = await db().query.profileSnapshots.findMany({
-			columns: { json: true },
+			columns: { proto: true },
 			where: {
 				OR: Object.entries(lastUpdated).map(([snapshotDate, uids]) => ({
 					uid: { in: uids.map(([uid]) => uid) },
@@ -35,11 +34,7 @@ describe("parse", () => {
 				})),
 			},
 		});
-		latest.push(
-			...snapshots.map(({ json }) =>
-				fromJson(UserProfileSchema, json as never),
-			),
-		);
+		latest.push(...snapshots.map(({ proto }) => proto));
 	});
 
 	const tryParse = <K extends keyof UserProfile>(

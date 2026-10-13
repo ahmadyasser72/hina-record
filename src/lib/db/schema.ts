@@ -1,10 +1,14 @@
+import { fromBinary, toBinary } from "@bufbuild/protobuf";
 import { defineRelations } from "drizzle-orm";
 import {
+	customType,
 	integer,
-	primaryKey,
 	sqliteTable,
 	text,
+	unique,
 } from "drizzle-orm/sqlite-core";
+
+import { UserProfileSchema, type UserProfile } from "#gbp/gen/profile_pb";
 
 export enum GbpBand {
 	"Poppin'Party" = 1,
@@ -80,9 +84,20 @@ export interface MusicClear {
 	allPerfect: number;
 }
 
+const protoProfile = customType<{
+	data: UserProfile;
+	driverOutput: ArrayBuffer;
+	configRequired: false;
+}>({
+	dataType: () => "blob",
+	fromDriver: (buffer) => fromBinary(UserProfileSchema, Buffer.from(buffer)),
+	toDriver: (value) => toBinary(UserProfileSchema, value),
+});
+
 export const profileSnapshots = sqliteTable(
 	"profile_snapshots",
 	{
+		id: integer().primaryKey({ autoIncrement: true }),
 		uid: text("uid").notNull(),
 		snapshotDate: text("snapshot_date").notNull(),
 
@@ -104,9 +119,10 @@ export const profileSnapshots = sqliteTable(
 			Record<MusicDifficulty, MusicClear>
 		>(),
 
-		json: text({ mode: "json" }).notNull().unique(),
+		proto: protoProfile().notNull(),
+		hash: text().notNull(),
 	},
-	(t) => [primaryKey({ columns: [t.uid, t.snapshotDate] })],
+	(t) => [unique().on(t.snapshotDate, t.uid), unique().on(t.uid, t.hash)],
 );
 
 export type ProfileSnapshot = typeof profileSnapshots.$inferSelect;
