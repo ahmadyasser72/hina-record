@@ -46,7 +46,7 @@ export const updateProfiles = schedules.task({
 		await updateProfile.batchTrigger(
 			Object.entries(grouped).map(([hour, uids]) => ({
 				payload: { uids, today, version },
-				options: { delay: now.add(Number(hour)).toDate() },
+				options: { delay: now.add(Number(hour), "hours").toDate() },
 			})),
 		);
 	},
