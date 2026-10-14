@@ -5,7 +5,7 @@ import {
 	schemaTask,
 	tags,
 } from "@trigger.dev/sdk";
-import { groupBy, isEqual, mapValues, omit, pick } from "es-toolkit";
+import { groupBy, isEqual, mapValues, omit, pick, shuffle } from "es-toolkit";
 import z from "zod";
 
 import { bangDream, type GbpCredentials } from "#gbp/fetch";
@@ -42,7 +42,7 @@ export const updateProfiles = schedules.task({
 
 		const now = dayjs.tz(timestamp).startOf("hour").add(1, "hour");
 		const today = now.format("YYYY-MM-DD");
-		const grouped = groupBy(uids, (_, idx) => idx % 24);
+		const grouped = groupBy(shuffle(uids), (_, idx) => idx % 24);
 		await updateProfile.batchTrigger(
 			Object.entries(grouped).map(([hour, uids]) => ({
 				payload: { uids, today, version },
