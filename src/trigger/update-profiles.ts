@@ -151,9 +151,11 @@ export const parseDeckRating = (
 	if (!raw?.entries || isEqual(raw.entries, {})) return null;
 
 	return z
-		.looseRecord(
+		.record(
 			z.enum(GbpBand),
-			z.object({ rank: z.string(), score: z.number(), level: z.number() }),
+			z
+				.object({ rank: z.string(), score: z.number(), level: z.number() })
+				.catch(() => ({ rank: "-", score: 0, level: 0 })),
 		)
 		.parse(raw.entries);
 };
