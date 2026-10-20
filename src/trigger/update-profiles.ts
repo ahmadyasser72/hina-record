@@ -30,7 +30,7 @@ import {
 import "zod/compile";
 
 export const updateProfiles = schedules.task({
-	id: "update-profiles",
+	id: "schedule-update-profiles",
 	cron: { pattern: "50 23 * * *", timezone: GBP_TIME_ZONE },
 	run: async ({ timestamp }) => {
 		const [uids, version] = await redis()
@@ -52,7 +52,7 @@ export const updateProfiles = schedules.task({
 	},
 });
 
-const updateProfile = schemaTask({
+export const updateProfile = schemaTask({
 	id: "update-profile",
 	schema: z.object({
 		uids: z.array(z.coerce.string()),
