@@ -4,24 +4,24 @@
 	"scripts": {},
 	"dependencies": {
 		"@libsql/client": "0.18.0",
-		"@trigger.dev/sdk": "4.7.3",
+		"@trigger.dev/sdk": "4.8.1",
 		"@upstash/redis": "1.39.0",
 		"dayjs": "1.11.23",
 		"drizzle-orm": "1.0.0-rc.5-ab785fc",
-		"es-toolkit": "1.52.0",
+		"es-toolkit": "1.53.0",
 		"xxhash-wasm": "1.1.0",
 		"zod": "4.6.7"
 	},
 	"devDependencies": {
-		"@bufbuild/buf": "1.73.0",
+		"@bufbuild/buf": "1.75.0",
 		"@bufbuild/protoc-gen-es": "2.16.0",
 		"@ianvs/prettier-plugin-sort-imports": "4.7.1",
-		"@trigger.dev/build": "4.7.3",
-		"@types/bun": "1.4.3",
+		"@trigger.dev/build": "4.8.1",
+		"@types/bun": "1.4.4",
 		"@types/node": "26.6.5",
 		"drizzle-kit": "1.0.0-rc.5-ab785fc",
 		"prettier": "3.9.10",
 		"prettier-plugin-packagejson": "3.0.2",
-		"wrangler": "4.149.0"
+		"wrangler": "4.152.0"
 	}
 }
