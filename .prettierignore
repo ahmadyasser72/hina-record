@@ -1,1 +1,5 @@
-/src/bang-dream-gbp/gen/
+/packages/shared/src/gbp/gen
+
+/site/worker-configuration.d.ts
+/site/src/pracht-routes.ts
+/site/src/pracht.d.ts

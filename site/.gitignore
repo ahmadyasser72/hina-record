@@ -1,0 +1,9 @@
+dist
+node_modules
+.netlify
+.wrangler
+.vercel
+.env*
+!.env.example
+.dev.vars
+# Keep .pracht/app-graph.json committed — it is the `pracht plan` snapshot.

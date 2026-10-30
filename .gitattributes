@@ -1,5 +1,6 @@
 # buf generate
-src/bang-dream-gbp/gen linguist-generated
+/packages/shared/src/gbp/gen linguist-generated
 
-# bun wrangler types --env-file .env.site
-worker-configuration.d.ts linguist-generated
+/site/worker-configuration.d.ts linguist-generated
+/site/src/pracht-routes.ts linguist-generated
+/site/src/pracht.d.ts linguist-generated

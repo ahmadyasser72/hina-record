@@ -20,6 +20,7 @@ const config = {
 		"",
 		"<THIRD_PARTY_MODULES>",
 		"",
+		"^@hina-record/.+",
 		"^#.+",
 		"^[.]",
 	],

@@ -1,0 +1,176 @@
+---
+name: upgrade-pracht
+version: 1.3.0
+description: |
+  Upgrade the `@pracht/*` packages safely: inventory installed versions, read the
+  changelogs between installed and target, map breaking changes to real usage,
+  apply, then walk the verification ladder (doctor, typegen, verify, build,
+  tests).
+  Use for "upgrade pracht", "update @pracht packages", "bump the framework", "what
+  changed in the new pracht version", "is this upgrade safe".
+allowed-tools:
+  - Bash
+  - Read
+  - Edit
+  - Grep
+  - Glob
+  - AskUserQuestion
+---
+
+# Pracht Upgrade
+
+Upgrade `@pracht/*` dependencies with the changelog read _before_ the install,
+not after the build breaks.
+
+## Step 1: Inventory
+
+List every installed pracht package and its resolved version:
+
+```bash
+pnpm list --depth 1 --json | grep -A2 '@pracht/'   # or read package.json + lockfile
+```
+
+The family, in full: `@pracht/core`, `@pracht/cli`, `@pracht/vite-plugin`,
+`@pracht/adapter-node`, `@pracht/adapter-cloudflare`,
+`@pracht/adapter-netlify`, `@pracht/adapter-vercel`,
+`@pracht/adapter-static`, `@pracht/preact-ssr-precompile`,
+`@pracht/capabilities`, `@pracht/content`, `@pracht/markdown`,
+`@pracht/openapi`, `@pracht/image`, `@pracht/i18n`, `@pracht/session`,
+`@pracht/test`, plus the `create-pracht` scaffolder (which is not a runtime
+dependency and does not need to move with the rest). Get the latest published
+versions with `npm view <pkg> version`.
+
+## Step 2: Understand the versioning model
+
+`@pracht/core`, `@pracht/capabilities` and `@pracht/vite-plugin` always
+release together at one version (a Changesets `fixed` group): upgrade them to
+the same version. Every other package is **independently versioned** —
+`@pracht/cli` is on 1.x while core is on 0.x — so there is no "one framework
+version". Two consequences:
+
+1. **Internal ranges stop at the minor.** Published packages depend on their
+   siblings with caret ranges on 0.x (e.g. `@pracht/core: ^0.20.0`), and a 0.x
+   caret never crosses a minor. `@pracht/vite-plugin`, the adapters,
+   `@pracht/session`, `@pracht/i18n`, `@pracht/query`, and `@pracht/test` take
+   `@pracht/core` as a peer, so upgrading core past their range fails with
+   `ERESOLVE` under npm and warns under pnpm; forcing it through
+   (`--legacy-peer-deps`, `--force`) can install a second core that splits the
+   runtime. Upgrade the whole family in one move.
+2. **Most packages are 0.x**, so under semver a _minor_ bump may be breaking —
+   treat `### Minor Changes` entries on 0.x packages with the same care as
+   majors.
+
+After any upgrade, confirm a single core resolution:
+
+```bash
+pnpm why @pracht/core   # exactly one version may appear
+```
+
+## Step 3: Read the changelogs between installed and target
+
+Only `@pracht/cli` ships `CHANGELOG.md` in its npm tarball
+(`node_modules/@pracht/cli/CHANGELOG.md`); the other packages publish `dist/`
+only. Fetch their changelogs from the repo instead:
+
+```
+https://raw.githubusercontent.com/JoviDeCroock/pracht/main/packages/<dir>/CHANGELOG.md
+```
+
+| Package                                                                     | Repo directory                   |
+| --------------------------------------------------------------------------- | -------------------------------- |
+| `@pracht/core`                                                              | `packages/framework`             |
+| `@pracht/cli`                                                               | `packages/cli`                   |
+| `@pracht/vite-plugin`                                                       | `packages/vite-plugin`           |
+| `@pracht/adapter-node` / `-cloudflare` / `-netlify` / `-vercel` / `-static` | `packages/adapter-*`             |
+| `@pracht/preact-ssr-precompile`                                             | `packages/preact-ssr-precompile` |
+| `@pracht/capabilities`                                                      | `packages/capabilities`          |
+| `@pracht/content`                                                           | `packages/content`               |
+| `@pracht/markdown`                                                          | `packages/markdown`              |
+| `@pracht/openapi`                                                           | `packages/openapi`               |
+| `@pracht/image`                                                             | `packages/image`                 |
+| `@pracht/i18n`                                                              | `packages/i18n`                  |
+| `@pracht/session`                                                           | `packages/session`               |
+| `@pracht/test`                                                              | `packages/test`                  |
+| `create-pracht`                                                             | `packages/start`                 |
+
+Changelogs are changesets-generated: `## X.Y.Z` sections containing
+`### Major Changes` / `### Minor Changes` / `### Patch Changes`. Read every
+section between the installed and target version of every installed package.
+
+## Step 4: Map changes onto this app
+
+Classify each entry as **breaking** / **feature** / **fix**. For each breaking
+(or 0.x minor) entry, grep the app for the APIs, exports, config options, and
+generated-file shapes it names, and record: affected files, the migration the
+changelog prescribes, and whether it can be applied mechanically. Also
+re-check peer ranges after a major target bump — `@pracht/vite-plugin`
+requires `vite` (^8), `@pracht/adapter-cloudflare` requires `vite` and
+`wrangler` (^4.81), `@pracht/core` requires `preact` (^10) and
+`preact-render-to-string` (^6.7).
+
+Present the plan as a table:
+
+| Package | Installed → Target | Breaking entries | App impact | Migration |
+| ------- | ------------------ | ---------------- | ---------- | --------- |
+
+## Step 5: Confirm, then apply
+
+Use `AskUserQuestion` before touching anything when breaking migrations are
+required: confirm the target versions and which migrations to apply. Then:
+
+```bash
+pnpm up '@pracht/core@<v>' '@pracht/cli@<v>' '@pracht/vite-plugin@<v>' <adapters...>
+```
+
+Upgrade every installed `@pracht/*` package in the same command. Apply the
+agreed code migrations with minimal diffs, one changelog entry at a time.
+Then read the page behind each changed API with `pracht docs <topic>`, which
+serves the docs bundled with the newly installed CLI. A CLI without that
+command predates it; use https://pracht.resynapse.dev/llms.txt instead.
+
+## Step 6: Verification ladder
+
+Run in order; stop and fix at the first failure:
+
+```bash
+pracht doctor --json          # wiring still valid
+pracht typegen --check        # generated route types up to date?
+pracht typegen                # regenerate if --check failed or routes changed
+pracht verify --json          # framework-aware checks
+pnpm typecheck                # both tsconfig programs, if the app has the script
+pracht build                  # full production build (budgets included)
+pnpm test                     # the app's own suite
+```
+
+`pracht doctor`, `verify`, and `typegen --check` exit non-zero on failure, so
+they gate CI cleanly. Act on doctor _warnings_ too: `pnpm up` never touches
+files `create-pracht` wrote, so a warning is how an older scaffold learns it
+needs a config change — for example adding `"src/**/*.d.ts"` to the
+`include` of `tsconfig.client.json`, without which typed route hooks are
+`unknown` in client code and `<Link route>` accepts any string.
+
+## Step 7: Rollback note
+
+If the ladder cannot be made green, roll back rather than shipping a
+half-upgrade:
+
+```bash
+git restore package.json pnpm-lock.yaml && pnpm install
+git checkout -- <migrated files>   # or revert the upgrade commit
+```
+
+Because internal ranges stop at the minor, a _partial_ rollback (one package
+back, the rest forward) hits the peer conflicts or duplicate core from Step 2 —
+roll the whole family back together.
+
+## Rules
+
+1. Never mix `@pracht/*` versions from different release waves — upgrade and
+   roll back the family as a unit, and verify with `pnpm why @pracht/core`.
+2. Read changelogs before installing, not after something breaks.
+3. Never apply a breaking-change migration without explicit user confirmation
+   via `AskUserQuestion`.
+4. Treat 0.x minor bumps as potentially breaking.
+5. Do not hand-edit lockfiles; let the package manager resolve.
+
+$ARGUMENTS

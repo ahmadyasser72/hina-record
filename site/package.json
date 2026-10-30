@@ -1,0 +1,34 @@
+{
+	"name": "@hina-record/site",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"build": "pracht build",
+		"cf-typegen": "wrangler types",
+		"deploy": "pracht build && wrangler deploy",
+		"dev": "pracht dev",
+		"preview": "pracht preview",
+		"typecheck": "wrangler types && tsc --noEmit && tsc --noEmit --project tsconfig.client.json"
+	},
+	"dependencies": {
+		"@hina-record/shared": "workspace:*",
+		"@pracht/adapter-cloudflare": "^0.9.0",
+		"@pracht/core": "^0.21.0"
+	},
+	"devDependencies": {
+		"@pracht/cli": "^1.17.0",
+		"@pracht/vite-plugin": "^0.21.0",
+		"@tailwindcss/vite": "^4.3.3",
+		"daisyui": "^5.7.50",
+		"preact": "^11.0.1",
+		"preact-render-to-string": "^6.7.0",
+		"tailwindcss": "^4.3.3",
+		"typescript": "^7.0.2",
+		"vite": "^8.0.0",
+		"wrangler": "^4.81.0"
+	},
+	"engines": {
+		"node": ">=22.18"
+	}
+}
