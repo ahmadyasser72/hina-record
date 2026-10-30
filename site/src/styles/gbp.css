@@ -1,0 +1,23 @@
+@theme inline {
+	--color-music-difficulty: var(--gbp-music-difficulty);
+}
+
+[data-difficulty="easy"] {
+	--gbp-music-difficulty: #4675e5;
+}
+
+[data-difficulty="normal"] {
+	--gbp-music-difficulty: #5ce45d;
+}
+
+[data-difficulty="hard"] {
+	--gbp-music-difficulty: #ffaf38;
+}
+
+[data-difficulty="expert"] {
+	--gbp-music-difficulty: #e9454c;
+}
+
+[data-difficulty="special"] {
+	--gbp-music-difficulty: #e8369c;
+}

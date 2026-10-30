@@ -4,8 +4,8 @@
 
 	"packageRules": [
 		{
-			"matchPackageNames": ["prettier-plugin-tailwindcss"],
-			"enabled": false
+			"enabled": false,
+			"matchPackageNames": ["prettier-plugin-tailwindcss"]
 		}
 	]
 }

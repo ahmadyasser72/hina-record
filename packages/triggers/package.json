@@ -1,0 +1,22 @@
+{
+	"name": "@hina-record/triggers",
+	"type": "module",
+	"scripts": {
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@bufbuild/protobuf": "2.16.0",
+		"@hina-record/shared": "workspace:*",
+		"@trigger.dev/sdk": "4.7.3",
+		"drizzle-orm": "1.0.0-rc.5-ab785fc",
+		"es-toolkit": "1.52.0",
+		"xxhash-wasm": "1.1.0",
+		"zod": "4.6.7"
+	},
+	"devDependencies": {
+		"@trigger.dev/build": "4.7.3",
+		"@types/bun": "1.4.3",
+		"@types/node": "26.6.5",
+		"typescript": "7.0.2"
+	}
+}

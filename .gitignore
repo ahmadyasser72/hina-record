@@ -1,7 +1,5 @@
 # build output
 dist/
-# generated types
-.astro/
 
 # dependencies
 node_modules/
@@ -21,3 +19,5 @@ pnpm-debug.log*
 .idea/
 .trigger/
 .wrangler/
+cn-tables.mjs
+tsconfig.tsbuildinfo

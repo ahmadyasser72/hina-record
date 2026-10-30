@@ -1,0 +1,37 @@
+{
+	"name": "site",
+	"type": "module",
+	"scripts": {
+		"build": "vite build",
+		"cf-typegen": "wrangler types --env-interface CloudflareBindings",
+		"deploy": "$npm_execpath run build && wrangler deploy",
+		"dev": "vite",
+		"preview": "$npm_execpath run build && vite preview",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@hina-record/shared": "workspace:*",
+		"cn": "0.5.1",
+		"es-toolkit": "1.53.1",
+		"hono": "5.0.0-rc.1",
+		"htmx.org": "4.0.1"
+	},
+	"devDependencies": {
+		"@catppuccin/daisyui": "^2.1.1",
+		"@cloudflare/vite-plugin": "^1.44.0",
+		"@fontsource/comic-relief": "5.3.0",
+		"@fontsource/kiwi-maru": "5.3.1",
+		"@iconify-json/pixelarticons": "1.2.10",
+		"@iconify-json/svg-spinners": "1.2.4",
+		"@iconify/tailwind4": "1.2.3",
+		"@tailwindcss/vite": "4.3.3",
+		"@types/bun": "1.4.4",
+		"@types/node": "26.6.6",
+		"daisyui": "^5.7.50",
+		"tailwindcss": "4.3.3",
+		"typescript": "7.0.2",
+		"vite": "^8.1.4",
+		"vite-ssr-components": "^0.8.0",
+		"wrangler": "^4.110.0"
+	}
+}

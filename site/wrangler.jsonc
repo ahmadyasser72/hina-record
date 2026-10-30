@@ -1,0 +1,14 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "hina-record",
+	"main": "./src/index.tsx",
+
+	"assets": { "binding": "ASSETS", "directory": "./dist" },
+	"compatibility_date": "2026-09-01",
+	"compatibility_flags": ["nodejs_compat"],
+	"placement": { "mode": "smart" },
+	"observability": {
+		"enabled": true,
+		"traces": { "enabled": true }
+	}
+}

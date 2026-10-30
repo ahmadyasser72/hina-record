@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+@import "./catpuccin.css";
+@import "./fonts.css";
+@import "./iconify.css";
+@import "./gbp.css";
+
+@plugin "daisyui" {
+	themes: false;
+	logs: false;
+}
+
+:root {
+	@apply scrollbar-thin scrollbar-thumb-secondary-content/67 scrollbar-track-secondary/34 scrollbar-gutter-stable;
+}
