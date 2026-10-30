@@ -2,6 +2,7 @@ import { fromBinary, toBinary } from "@bufbuild/protobuf";
 import { defineRelations } from "drizzle-orm";
 import {
 	customType,
+	foreignKey,
 	integer,
 	sqliteTable,
 	text,
@@ -125,7 +126,50 @@ export const profileSnapshots = sqliteTable(
 	(t) => [unique().on(t.snapshotDate, t.uid), unique().on(t.uid, t.hash)],
 );
 
+export const SNAPSHOT_CHANGES = [
+	"username",
+	"rank",
+	"introduction",
+	"profileCard",
+	"bandRank",
+	"characterRank",
+	"highScoreRating",
+	"deckRating",
+	"stageChallenge",
+	"musicClear",
+] as const;
+export type SnapshotChange = (typeof SNAPSHOT_CHANGES)[number];
+
+export const profileSnapshotChanges = sqliteTable(
+	"profile_snapshot_changes",
+	{
+		id: integer().primaryKey({ autoIncrement: true }),
+		uid: text("uid").notNull(),
+		snapshotDate: text("snapshot_date").notNull(),
+		value: text().notNull().$type<SnapshotChange>(),
+	},
+	(t) => [
+		foreignKey({
+			columns: [t.uid, t.snapshotDate],
+			foreignColumns: [profileSnapshots.uid, profileSnapshots.snapshotDate],
+		}),
+	],
+);
+
 export type ProfileSnapshot = typeof profileSnapshots.$inferSelect;
 export type NewProfileSnapshot = typeof profileSnapshots.$inferInsert;
 
-export const relations = defineRelations({ profileSnapshots });
+export const relations = defineRelations(
+	{ profileSnapshots, profileSnapshotChanges },
+	(r) => ({
+		profileSnapshots: {
+			changes: r.many.profileSnapshotChanges({
+				from: [r.profileSnapshots.uid, r.profileSnapshots.snapshotDate],
+				to: [
+					r.profileSnapshotChanges.uid,
+					r.profileSnapshotChanges.snapshotDate,
+				],
+			}),
+		},
+	}),
+);

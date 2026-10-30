@@ -21,10 +21,13 @@ import { db, GBP, redis } from "#lib/db";
 import {
 	GbpBand,
 	GbpCharacter,
+	profileSnapshotChanges,
 	profileSnapshots,
+	SNAPSHOT_CHANGES,
 	type MusicClear,
 	type NewProfileSnapshot,
 	type ProfileSnapshot,
+	type SnapshotChange,
 } from "#lib/db/schema";
 
 import "zod/compile";
@@ -43,7 +46,7 @@ export const updateProfiles = schedules.task({
 		const now = dayjs.tz(timestamp).startOf("hour").add(1, "hour");
 		const today = now.format("YYYY-MM-DD");
 		await updateProfile.batchTrigger(
-			chunk(shuffle(uids), 100).map((uids,idx) => ({
+			chunk(shuffle(uids), 100).map((uids, idx) => ({
 				payload: { uids, today, version },
 				options: { delay: now.add(idx * 3, "minutes").toDate() },
 			})),
@@ -62,12 +65,25 @@ export const updateProfile = schemaTask({
 	concurrency: { total: 1 },
 	retry: { maxAttempts: 1 },
 
-	onStartAttempt: async ({ ctx }) => {
+	onStartAttempt: async ({ ctx, payload }) => {
 		const credentials = await redis().hgetall(GBP.credentials);
 		if (!credentials)
 			throw new AbortTaskRunError("BanG Dream credentials are missing.");
-
 		ctx.task.credentials = credentials;
+
+		const ids = Object.values(
+			(await redis().hmget<Record<string, number>>(
+				GBP.playersLatest,
+				...payload.uids,
+			)) ?? {},
+		);
+		const latestSnapshots = await db().query.profileSnapshots.findMany({
+			columns: { id: false, snapshotDate: false, proto: false, hash: false },
+			where: { id: { in: ids } },
+		});
+		ctx.task.latest = Object.fromEntries(
+			latestSnapshots.map(({ uid, ...value }) => [uid, value]),
+		);
 	},
 	onComplete: async ({ ctx }) => {
 		await redis().hset(GBP.credentials, {
@@ -77,6 +93,10 @@ export const updateProfile = schemaTask({
 
 	run: async ({ uids, today, version }, { ctx }) => {
 		const credentials = ctx.task.credentials as GbpCredentials;
+		const latest = ctx.task.latest as Partial<
+			Record<string, Pick<ProfileSnapshot, SnapshotChange>>
+		>;
+
 		const snapshots = [] as NewProfileSnapshot[];
 		for (const uid of uids.map(String)) {
 			const profile = await bangDream.profile(version, credentials, uid);
@@ -107,11 +127,25 @@ export const updateProfile = schemaTask({
 		}
 		if (snapshots.length === 0) return;
 
-		const changed = await db()
-			.insert(profileSnapshots)
-			.values(snapshots)
-			.onConflictDoNothing()
-			.returning({ id: profileSnapshots.id, uid: profileSnapshots.uid });
+		const snapshotChanges = snapshots.flatMap(
+			({ uid, snapshotDate, ...current }) => {
+				const previous = latest[uid];
+				if (!previous) return [];
+
+				return SNAPSHOT_CHANGES.filter(
+					(change) => !isEqual(current[change], previous[change]),
+				).map((value) => ({ uid, snapshotDate, value }));
+			},
+		);
+
+		const [changed] = await db().batch([
+			db()
+				.insert(profileSnapshots)
+				.values(snapshots)
+				.onConflictDoNothing()
+				.returning({ id: profileSnapshots.id, uid: profileSnapshots.uid }),
+			db().insert(profileSnapshotChanges).values(snapshotChanges),
+		]);
 		if (changed.length === 0) return;
 
 		await tags.add(`upsert_${changed.length}`);
