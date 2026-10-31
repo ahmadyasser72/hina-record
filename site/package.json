@@ -13,22 +13,22 @@
 	},
 	"dependencies": {
 		"@hina-record/shared": "workspace:*",
-		"@pracht/adapter-cloudflare": "^0.9.0",
-		"@pracht/core": "^0.21.0"
+		"@pracht/adapter-cloudflare": "0.9.0",
+		"@pracht/core": "0.21.0"
 	},
 	"devDependencies": {
-		"@pracht/cli": "^1.17.0",
-		"@pracht/vite-plugin": "^0.21.0",
-		"@tailwindcss/vite": "^4.3.3",
-		"daisyui": "^5.7.50",
-		"preact": "^11.0.1",
-		"preact-render-to-string": "^6.7.0",
-		"tailwindcss": "^4.3.3",
-		"typescript": "^7.0.2",
-		"vite": "^8.0.0",
-		"wrangler": "^4.81.0"
+		"@pracht/cli": "1.17.0",
+		"@pracht/vite-plugin": "0.21.0",
+		"@tailwindcss/vite": "4.3.3",
+		"daisyui": "5.7.50",
+		"preact": "11.1.1",
+		"preact-render-to-string": "6.8.2",
+		"tailwindcss": "4.3.3",
+		"typescript": "7.0.2",
+		"vite": "8.3.5",
+		"wrangler": "4.156.0"
 	},
 	"engines": {
-		"node": ">=22.18"
+		"node": "v26.13.0"
 	}
 }
