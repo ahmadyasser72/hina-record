@@ -5,7 +5,10 @@ import "htmx.org/dist/ext/hx-live";
 
 // @ts-expect-error helper
 window.__elementIsInViewport = (element: HTMLElement) => {
-	const bounding = element.getBoundingClientRect();
+	const content = element.classList.contains("contents")
+		? (element.firstElementChild ?? element.parentElement)
+		: element;
+	const bounding = (content as HTMLElement).getBoundingClientRect();
 	return (
 		bounding.top >= 0 &&
 		bounding.left >= 0 &&

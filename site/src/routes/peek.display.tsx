@@ -1,244 +1,186 @@
 import { cn } from "cn";
-import { chunk, isEqual, kebabCase, startCase, sum, sumBy } from "es-toolkit";
+import { isEqual, kebabCase, startCase, sum, sumBy, zip } from "es-toolkit";
 import type { JSX } from "hono/jsx";
 
 import {
 	GbpBand,
 	GbpCharacter,
-	GbpCharacterBand,
+	GbpCharactersByBand,
 	GbpStageChallenge,
 	MusicClearKind,
-	type MusicDifficulty,
+	MusicDifficulty,
 	type ProfileSnapshot,
 	type SnapshotChange,
 } from "@hina-record/shared/db/schema";
 import { Icon } from "~/lib/components/icon";
 
 export const Display = {
-	bandRank: (bandRank, previousValue) =>
-		Object.entries(bandRank)
-			.map(([id, value]) => {
-				const previous = previousValue?.[Number(id) as GbpBand];
-				return {
-					id,
-					value,
-					previous,
-					changed: previous !== undefined && value !== previous,
-				};
-			})
-			.map(({ id, value, previous, changed }) => (
-				<div class="stat w-max">
-					<div class="stat-figure">
-						<img
-							alt={id}
-							class="h-10"
-							loading="lazy"
-							src={`/assets/bands/${id}-logo.png`}
-						/>
-					</div>
-					<div class="stat-value relative">
-						{changed ? (
-							<div class="swap">
-								<div class="swap-off">{value}</div>
-								<div class="swap-on">{previous}</div>
-							</div>
-						) : (
-							(value ?? "-")
-						)}
-
-						<sub class="text-xs">/50</sub>
-						{changed && (
-							<ChangedDot class="absolute top-1/2 right-1 -translate-y-full" />
-						)}
-					</div>
-				</div>
-			)),
-	characterRank: (characterRank, previousValue) =>
-		chunk(Object.entries(characterRank), 5)
-			.map((chunk, idx) => {
-				const band = GbpCharacterBand[Number(chunk[0][0]) as GbpCharacter];
-				const value = sumBy(chunk, ([, rank]) => rank);
-				const previous = previousValue
-					? sum(Object.values(previousValue).slice(idx * 5, idx * 5 + 5))
-					: undefined;
-				return {
-					chunk,
-					band: {
-						id: band,
-						value,
-						previous,
-						changed: previous !== undefined && value !== previous,
-					},
-				};
-			})
-			.map(({ chunk, band }) => (
-				<>
-					<div class="divider">
-						<img
-							alt={band.id.toString()}
-							class="-mr-2 size-6"
-							loading="lazy"
-							src={`/assets/bands/${band.id}.svg`}
-						/>
-
-						<div>
-							{GbpBand[band.id]} &mdash;{" "}
-							{band.changed ? (
-								<>
-									<div class="swap">
-										<div class="swap-off">
-											{band.value?.toLocaleString()}/500
-										</div>
-										<div class="swap-on">
-											{band.previous?.toLocaleString()}/500
-										</div>
-									</div>
-
-									<ChangedDot />
-								</>
-							) : (
-								`${band.value.toLocaleString()}/500`
-							)}
+	bandRank: (bandRank, previousValue) => (
+		<div class="stats-vertical flex flex-wrap justify-center">
+			{Object.keys(bandRank)
+				.map(
+					withPrevious({
+						getValue: (data, key: GbpBand) => data[key],
+						value: bandRank,
+						previous: previousValue,
+					}),
+				)
+				.map(({ id, ...data }) => (
+					<div class="stat w-max">
+						<div class="stat-figure">
+							<img
+								alt={id.toString()}
+								class="h-10"
+								loading="lazy"
+								src={`/assets/bands/${id}-logo.png`}
+							/>
+						</div>
+						<div class="stat-value">
+							<DisplayWithPrevious {...data}>
+								{(value) => (
+									<>
+										{value}
+										<sub>/50</sub>
+									</>
+								)}
+							</DisplayWithPrevious>
 						</div>
 					</div>
+				))}
+		</div>
+	),
+	characterRank: (characterRank, previousValue) => {
+		const values = Object.keys(GbpCharactersByBand).map(
+			withPrevious({
+				getValue: (data, key: GbpBand) => {
+					const characters = GbpCharactersByBand[key];
+					return {
+						characters: characters.map((id) => ({ id, value: data[id] })),
+						total: sumBy(characters, (id) => data[id]),
+					};
+				},
+				value: characterRank,
+				previous: previousValue,
+			}),
+		);
+		const overall = withPrevious({
+			getValue: (data) => sum(Object.values(data)),
+			value: characterRank,
+			previous: previousValue,
+		})();
 
-					<div class="flex w-full flex-wrap justify-center">
-						{chunk
-							.map(([id, value]) => {
-								const previous = previousValue?.[Number(id) as GbpCharacter];
-								return {
-									id,
-									value,
-									previous,
-									changed: previous !== undefined && value !== previous,
-								};
-							})
-							.map(({ id, value, previous, changed }) => (
-								<div class="stat w-max">
-									<div class="stat-figure">
-										<img
-											alt={id}
-											class="size-10"
-											loading="lazy"
-											src={`/assets/characters/${id}.webp`}
-										/>
+		return (
+			<>
+				{values.map((band) => (
+					<>
+						<div class="divider">
+							<img
+								alt={band.id.toString()}
+								class="-mr-2 size-6"
+								loading="lazy"
+								src={`/assets/bands/${band.id}.svg`}
+							/>
+
+							<div>
+								{GbpBand[band.id]} &mdash;{" "}
+								<DisplayWithPrevious {...band}>
+									{({ total }) => `${total.toLocaleString()}/500`}
+								</DisplayWithPrevious>
+							</div>
+						</div>
+
+						<div class="max-md:stats-vertical flex w-full flex-wrap justify-center">
+							{zip(band.value.characters, band.previous?.characters ?? []).map(
+								([value, previous]) => (
+									<div class="stat w-max">
+										<div class="stat-figure">
+											<img
+												alt={value.id.toString()}
+												class="size-10"
+												loading="lazy"
+												src={`/assets/characters/${value.id}.webp`}
+											/>
+										</div>
+										<div class="stat-value">
+											<DisplayWithPrevious
+												changed="auto"
+												previous={previous}
+												value={value}
+											>
+												{({ value }) => value}
+											</DisplayWithPrevious>
+										</div>
+										<div class="stat-desc">
+											{GbpCharacter[value.id].split(" ")[0]}
+										</div>
+									</div>
+								),
+							)}
+						</div>
+					</>
+				))}
+
+				<div class="divider">
+					Overall{" "}
+					<DisplayWithPrevious {...overall}>
+						{(value) => `${value.toLocaleString()}/${values.length * 500}`}
+					</DisplayWithPrevious>
+				</div>
+			</>
+		);
+	},
+	musicClear: (musicClear, previousValue) => {
+		const values = MusicClearKind.map(
+			withPrevious({
+				getValue: (data, key: MusicClearKind) =>
+					sum(Object.values(data).map((value) => value[key] ?? 0)),
+				value: musicClear,
+				previous: previousValue,
+			}),
+		);
+		const overall = withPrevious({
+			getValue: (data) =>
+				sumBy(Object.values(data), (values) =>
+					sum(Object.values(values).filter((value) => value !== null)),
+				),
+			value: musicClear,
+			previous: previousValue,
+		})();
+
+		return (
+			<>
+				{values.map(({ id, ...total }) => (
+					<>
+						<div class="divider">
+							<div>
+								{startCase(id)} &mdash;{" "}
+								<DisplayWithPrevious {...total}>
+									{(value) => (value > 0 ? value.toLocaleString() : "Hidden")}
+								</DisplayWithPrevious>
+							</div>
+						</div>
+						<div class="max-md:stats-vertical flex w-full flex-wrap justify-center">
+							{MusicDifficulty.map(
+								withPrevious({
+									getValue: (data, key: MusicDifficulty) => data[key][id],
+									value: musicClear,
+									previous: previousValue,
+								}),
+							).map(({ id, ...data }) => (
+								<div class="stat w-max flex-1 place-items-center">
+									<div
+										class="stat-title badge bg-music-difficulty text-white uppercase"
+										data-difficulty={id}
+									>
+										{id}
 									</div>
 									<div class="stat-value">
-										{changed ? (
-											<>
-												<div class="swap">
-													<div class="swap-off">{value}</div>
-													<div class="swap-on">{previous}</div>
-												</div>
-
-												<ChangedDot />
-											</>
-										) : (
-											value
-										)}
-									</div>
-									<div class="stat-desc">
-										{GbpCharacter[Number(id) as GbpCharacter].split(" ")[0]}
+										<DisplayWithPrevious {...data}>
+											{(value) => value ?? "-"}
+										</DisplayWithPrevious>
 									</div>
 								</div>
 							))}
-					</div>
-				</>
-			)),
-	musicClear: (musicClear, previousValue) => {
-		const values = MusicClearKind.map((kind) => {
-			const value = sumBy(
-				Object.values(musicClear),
-				(value) => value[kind] ?? 0,
-			);
-			const previous = previousValue
-				? sumBy(Object.values(previousValue), (value) => value[kind] ?? 0)
-				: undefined;
-			return {
-				kind,
-				total: {
-					value,
-					previous,
-					changed: previous !== undefined && value !== previous,
-				},
-			};
-		});
-
-		const overall = {
-			value: sumBy(values, ({ total }) => total.value),
-			previous: previousValue
-				? sumBy(values, ({ total }) => total.previous ?? 0)
-				: undefined,
-		};
-
-		return (
-			<>
-				{values.map(({ kind, total }) => (
-					<>
-						<div class="divider">
-							<div>
-								{startCase(kind)} &mdash;{" "}
-								{total.changed ? (
-									<>
-										<div class="swap">
-											<div class="swap-off">
-												{total.value > 0
-													? total.value.toLocaleString()
-													: "Hidden"}
-											</div>
-											<div class="swap-on">
-												{total.previous && total.previous > 0
-													? total.previous.toLocaleString()
-													: "Hidden"}
-											</div>
-										</div>
-
-										<ChangedDot />
-									</>
-								) : total.value > 0 ? (
-									total.value.toLocaleString()
-								) : (
-									"Hidden"
-								)}
-							</div>
-						</div>
-						<div class="flex w-full flex-wrap justify-center">
-							{Object.entries(musicClear)
-								.map(([difficulty, values]) => {
-									const value = values[kind];
-									const previous =
-										previousValue?.[difficulty as MusicDifficulty][kind];
-									return {
-										difficulty,
-										value,
-										previous,
-										changed: previous !== undefined && value !== previous,
-									};
-								})
-								.map(({ difficulty, value, previous, changed }) => (
-									<div class="stat w-max flex-1 place-items-center">
-										<div
-											class="stat-title badge bg-music-difficulty text-white uppercase"
-											data-difficulty={difficulty}
-										>
-											{difficulty}
-										</div>
-										<div class="stat-value">
-											{changed ? (
-												<>
-													<div class="swap">
-														<div class="swap-off">{value ?? "-"}</div>
-														<div class="swap-on">{previous ?? "-"}</div>
-													</div>
-
-													<ChangedDot />
-												</>
-											) : (
-												(value ?? "-")
-											)}
-										</div>
-									</div>
-								))}
 						</div>
 					</>
 				))}
@@ -246,305 +188,206 @@ export const Display = {
 				<div class="divider">
 					<div>
 						Overall{" "}
-						{overall.previous !== undefined ? (
-							<>
-								<div class="swap">
-									<div class="swap-off">
-										{overall.value > 0
-											? overall.value.toLocaleString()
-											: "Hidden"}
-									</div>
-									<div class="swap-on">
-										{overall.previous > 0
-											? overall.previous.toLocaleString()
-											: "Hidden"}
-									</div>
-								</div>
-
-								<ChangedDot />
-							</>
-						) : overall.value > 0 ? (
-							overall.value.toLocaleString()
-						) : (
-							"Hidden"
-						)}
+						<DisplayWithPrevious {...overall}>
+							{(value) => value.toLocaleString()}
+						</DisplayWithPrevious>
 					</div>
 				</div>
 			</>
 		);
 	},
-	highScoreRating: (highScoreRating, previousValue) => (
-		<>
-			{[...Object.keys(GbpBand).slice(0, 8), 0]
-				.map((it) => {
-					const id = it as GbpBand | 0;
-					const value = sumBy(highScoreRating[id], ({ rating }) => rating);
-					const previous = previousValue
-						? sumBy(previousValue[id], ({ rating }) => rating)
-						: undefined;
-					return {
-						band: {
-							id,
-							value,
-							previous,
-							changed: previous !== undefined && value !== previous,
-						},
-					};
-				})
-				.map(({ band }) => (
-					<>
-						<div class="divider">
-							{band.id !== 0 && (
-								<img
-									alt={band.id.toString()}
-									class="-mr-2 size-6"
-									loading="lazy"
-									src={`/assets/bands/${band.id}.svg`}
-								/>
-							)}
+	highScoreRating: (highScoreRating, previousValue) => {
+		const overall = withPrevious({
+			getValue: (data) =>
+				sumBy(Object.values(data).flat(), ({ rating }) => rating),
+			value: highScoreRating,
+			previous: previousValue,
+		})();
 
-							<div>
-								{band.id === 0 ? "Other" : GbpBand[band.id]} &mdash;{" "}
-								{band.changed ? (
-									<>
-										<div class="swap">
-											<div class="swap-off">{band.value.toLocaleString()}</div>
-											<div class="swap-on">
-												{band.previous?.toLocaleString()}
-											</div>
-										</div>
-
-										<ChangedDot />
-									</>
-								) : (
-									band.value.toLocaleString()
+		return (
+			<>
+				{[...Object.keys(GbpBand).slice(0, 8), 0]
+					.map(
+						withPrevious({
+							getValue: (data, key: GbpBand | 0) => ({
+								rating: sumBy(data[key], ({ rating }) => rating),
+								values: data[key],
+							}),
+							value: highScoreRating,
+							previous: previousValue,
+						}),
+					)
+					.map((band) => (
+						<>
+							<div class="divider">
+								{band.id !== 0 && (
+									<img
+										alt={band.id.toString()}
+										class="-mr-2 size-6"
+										loading="lazy"
+										src={`/assets/bands/${band.id}.svg`}
+									/>
 								)}
+
+								<div>
+									{band.id === 0 ? "Other" : GbpBand[band.id]} &mdash;{" "}
+									<DisplayWithPrevious {...band}>
+										{({ rating }) => rating.toLocaleString()}
+									</DisplayWithPrevious>
+								</div>
 							</div>
-						</div>
-						<div class="flex w-full flex-wrap justify-center">
-							{highScoreRating[band.id]
-								.map((value, idx) => {
-									const previous = previousValue
-										? previousValue[band.id][idx]
-										: undefined;
-									return {
-										value,
-										previous,
-										changed:
-											previous !== undefined && !isEqual(value, previous),
-									};
-								})
-								.map(
-									({
-										value: { music, difficulty, rating },
-										previous,
-										changed,
-									}) =>
-										changed ? (
-											<div class="swap">
-												<div class="stat swap-off w-max md:flex-1">
-													<div
-														class="tooltip tooltip-end stat-figure"
-														data-tip={music.title}
-													>
+							<div class="flex sm:justify-evenly">
+								{zip(band.value.values, band.previous?.values ?? []).map(
+									([value, previous], idx) => (
+										<DisplayWithPrevious
+											changed={{ value: band.changed, display: false }}
+											previous={previous}
+											value={value}
+										>
+											{({ music, difficulty, rating }) => (
+												<div
+													class={cn(
+														"tooltip tooltip-primary tooltip-bottom card image-full max-sm:flex-1 sm:aspect-square sm:max-h-48",
+														idx === 0 && "tooltip-start",
+														idx === 2 && "tooltip-end",
+													)}
+													data-tip={music.title}
+												>
+													<figure>
 														<img
 															alt={music.jacketImage}
-															class="size-24"
 															loading="lazy"
 															src={`/assets/music/${music.id}/${music.jacketImage}.png`}
 														/>
+													</figure>
+													<div class="card-body items-center justify-end gap-0.5 p-1 text-center">
+														<div
+															class="badge badge-xs bg-music-difficulty text-white uppercase"
+															data-difficulty={difficulty}
+														>
+															{difficulty}
+														</div>
+														<div class="text-lg">{rating}</div>
 													</div>
-													<div
-														class="stat-title badge bg-music-difficulty text-white uppercase"
-														data-difficulty={difficulty}
-													>
-														{difficulty}
-													</div>
-													<div class="stat-value">{rating}</div>
 												</div>
-												<div class="stat swap-on w-max md:flex-1">
-													<div
-														class="tooltip tooltip-end stat-figure"
-														data-tip={previous?.music.title}
-													>
-														<img
-															alt={previous?.music.jacketImage}
-															class="size-24"
-															loading="lazy"
-															src={`/assets/music/${previous?.music.id}/${previous?.music.jacketImage}.png`}
-														/>
-													</div>
-													<div
-														class="stat-title badge bg-music-difficulty text-white uppercase"
-														data-difficulty={previous?.difficulty}
-													>
-														{previous?.difficulty}
-													</div>
-													<div class="stat-value">{previous?.rating}</div>
-												</div>
-											</div>
-										) : (
-											<div class="stat w-max md:flex-1">
-												<div
-													class="tooltip tooltip-end stat-figure"
-													data-tip={music.title}
-												>
-													<img
-														alt={music.jacketImage}
-														class="size-24"
-														loading="lazy"
-														src={`/assets/music/${music.id}/${music.jacketImage}.png`}
-													/>
-												</div>
-												<div
-													class="stat-title badge bg-music-difficulty text-white uppercase"
-													data-difficulty={difficulty}
-												>
-													{difficulty}
-												</div>
-												<div class="stat-value">{rating}</div>
-											</div>
-										),
+											)}
+										</DisplayWithPrevious>
+									),
 								)}
-						</div>
-					</>
-				))}
+							</div>
+						</>
+					))}
 
-			<div class="divider">
-				Overall{" "}
-				{sumBy(Object.values(highScoreRating), (songs) =>
-					sumBy(songs, ({ rating }) => rating),
-				).toLocaleString()}
-			</div>
-		</>
-	),
+				<div class="divider">
+					Overall{" "}
+					<DisplayWithPrevious {...overall}>
+						{(value) => value.toLocaleString()}
+					</DisplayWithPrevious>
+				</div>
+			</>
+		);
+	},
 	deckRating: (deckRating, previousValue) => {
-		const overall = {
-			value: sumBy(Object.values(deckRating), ({ score }) => score),
-			previous: previousValue
-				? sumBy(Object.values(previousValue), ({ score }) => score)
-				: undefined,
-		};
+		const overall = withPrevious({
+			getValue: (data) => sumBy(Object.values(data), ({ score }) => score),
+			value: deckRating,
+			previous: previousValue,
+		})();
 
 		return (
 			<>
-				{Object.entries(deckRating)
-					.map(([id, value]) => {
-						const previous = previousValue?.[Number(id) as GbpBand];
-						return {
-							id,
-							value,
-							previous,
-							changed: previous !== undefined && !isEqual(value, previous),
-						};
-					})
-					.map(({ id, value, previous, changed }) => (
-						<div class="stat w-max flex-1">
-							<div class="stat-figure flex flex-col items-center">
-								<img
-									alt={id}
-									class="h-10"
-									loading="lazy"
-									src={`/assets/bands/${id}.svg`}
-								/>
+				<div class="stats-vertical flex flex-wrap justify-center">
+					{Object.keys(deckRating)
+						.map(
+							withPrevious({
+								getValue: (data, key: GbpBand) => data[key],
+								value: deckRating,
+								previous: previousValue,
+							}),
+						)
+						.map(({ id, changed, ...data }) => (
+							<div class="stat w-max">
+								<div class="stat-figure flex flex-col items-center">
+									<img
+										alt={id.toString()}
+										class="h-10"
+										loading="lazy"
+										src={`/assets/bands/${id}.svg`}
+									/>
 
-								{changed && <ChangedDot class="mt-2" />}
-							</div>
-
-							{changed ? (
-								<div class="swap">
-									<div class="swap-off">
-										<div class="stat-value uppercase">
-											{value.rank}
-											{value.rank !== "-" && <sub>{value.level}</sub>}
-										</div>
-										<div class="stat-desc">{value.score.toLocaleString()}</div>
-									</div>
-									<div class="swap-on">
-										<div class="stat-value uppercase">
-											{previous?.rank ?? "-"}
-											{previous?.rank && <sub>{previous.level}</sub>}
-										</div>
-										<div class="stat-desc">
-											{previous?.score.toLocaleString() ?? "-"}
-										</div>
-									</div>
+									{changed && <ChangedDot class="mt-2" />}
 								</div>
-							) : (
-								<>
-									<div class="stat-value uppercase">
-										{value.rank}
-										{value.rank !== "-" && <sub>{value.level}</sub>}
-									</div>
-									<div class="stat-desc">{value.score.toLocaleString()}</div>
-								</>
-							)}
-						</div>
-					))}
+
+								<DisplayWithPrevious
+									changed={{ value: changed, display: false }}
+									{...data}
+								>
+									{(value) => (
+										<>
+											<div class="stat-value uppercase">
+												{value.rank}
+												{value.rank !== "-" && <sub>{value.level}</sub>}
+											</div>
+											<div class="stat-desc">
+												{value.score.toLocaleString()}
+											</div>
+										</>
+									)}
+								</DisplayWithPrevious>
+							</div>
+						))}
+				</div>
 
 				<div class="divider">
 					<div>
 						Overall{" "}
-						{overall.previous !== undefined ? (
-							<>
-								<div class="swap">
-									<div class="swap-off">{overall.value.toLocaleString()}</div>
-									<div class="swap-on">{overall.previous.toLocaleString()}</div>
-								</div>
-
-								<ChangedDot />
-							</>
-						) : (
-							overall.value.toLocaleString()
-						)}
+						<DisplayWithPrevious {...overall}>
+							{(value) => value.toLocaleString()}
+						</DisplayWithPrevious>
 					</div>
 				</div>
 			</>
 		);
 	},
-	stageChallenge: (stageChallenge, previousValue) =>
-		Object.entries(GbpStageChallenge)
-			.map(([id, logo]) => {
-				const value = stageChallenge[Number(id)];
-				const previous = previousValue?.[Number(id)];
-				return {
-					logo,
-					value,
-					previous: previous ?? 0,
-					changed: previous !== undefined && value !== previous,
-				};
-			})
-			.map(({ logo, value, previous, changed }) => (
-				<div class="stat w-max">
-					<div class="stat-figure">
-						<img
-							alt={logo.toString()}
-							class="h-10"
-							loading="lazy"
-							src={
-								logo in GbpBand
-									? `/assets/bands/${logo}-logo.png`
-									: `/assets/stage-challenges/${logo}.png`
-							}
-						/>
+	stageChallenge: (stageChallenge, previousValue) => (
+		<div class="stats-vertical flex flex-wrap justify-center">
+			{Object.keys(GbpStageChallenge)
+				.map(
+					withPrevious({
+						getValue: (data, key: keyof typeof GbpStageChallenge) => data[key],
+						value: stageChallenge,
+						previous: previousValue,
+					}),
+				)
+				.map((data) => ({ ...data, logo: GbpStageChallenge[data.id] }))
+				.map(({ logo, ...data }) => (
+					<div class="stat w-max">
+						<div class="stat-figure">
+							<img
+								alt={logo.toString()}
+								class="h-10"
+								loading="lazy"
+								src={
+									logo in GbpBand
+										? `/assets/bands/${logo}-logo.png`
+										: `/assets/stage-challenges/${logo}.png`
+								}
+							/>
+						</div>
+						<div class="stat-value">
+							<DisplayWithPrevious {...data}>
+								{(value) => (
+									<>
+										{value}
+										<sub>/{logo in GbpBand ? 90 : 45}</sub>
+									</>
+								)}
+							</DisplayWithPrevious>
+						</div>
 					</div>
-					<div class="stat-value relative">
-						{changed ? (
-							<div class="swap">
-								<div class="swap-off">{value}</div>
-								<div class="swap-on">{previous}</div>
-							</div>
-						) : (
-							(value ?? "-")
-						)}
-
-						<sub class="text-xs">/{logo in GbpBand ? 90 : 45}</sub>
-						{changed && (
-							<ChangedDot class="absolute top-1/2 right-1 -translate-y-full" />
-						)}
-					</div>
-				</div>
-			)),
+				))}
+		</div>
+	),
 } satisfies {
 	[C in Exclude<
 		SnapshotChange,
@@ -604,10 +447,14 @@ export const CollapseWrapper = <C extends SnapshotChange>({
 						<button
 							class="btn btn-sm btn-soft btn-accent sticky bottom-4 w-full"
 							hx-on:click={[
-								`let changed = q(".swap in #${id}");`,
+								`let changed = q("[data-swap] in #${id}");`,
 								`if (!changed.arr().some(__elementIsInViewport))`,
-								`  q("first .swap in #${id}").scrollIntoView({ behavior: "smooth", block: "center" });`,
-								`changed.toggle(".swap-active");`,
+								`  q("first [data-swap] in #${id}").parentElement.scrollIntoView({ behavior: "smooth", block: "center" });`,
+								`for (let e of changed) {`,
+								`  let [swap, old] = [e.dataset.swap, e.innerHTML];`,
+								`  e.dataset.swap = old;`,
+								`  htmx.swap({ target: e, text: swap, swap: "innerMorph" });`,
+								`}`,
 								`q(".changed-dot in #${id}").toggle(".status-primary").toggle(".status-secondary");`,
 							].join("\n")}
 							type="button"
@@ -619,6 +466,66 @@ export const CollapseWrapper = <C extends SnapshotChange>({
 				</div>
 			)}
 		</details>
+	);
+};
+
+interface WithPreviousOptions<K, T, O> {
+	getValue: (data: T, key: K) => O;
+	value: T;
+	previous?: T | null;
+}
+
+export const withPrevious = <K, T, O>({
+	getValue,
+	...data
+}: WithPreviousOptions<K, T, O>) => {
+	return (key?: unknown) => {
+		const id = key as K;
+		const value = getValue(data.value, id);
+		const previous = data.previous ? getValue(data.previous, id) : undefined;
+		return {
+			id,
+			value,
+			previous,
+			changed: previous !== undefined && !isEqual(value, previous),
+		};
+	};
+};
+
+interface DisplayWithPreviousProps<T, O> {
+	value: T;
+	previous?: T;
+	changed: "auto" | boolean | { value: boolean; display: boolean };
+	children?: (value: T) => O;
+}
+
+export const DisplayWithPrevious = <T, O>({
+	value,
+	previous,
+	changed,
+	children,
+}: DisplayWithPreviousProps<T, O>) => {
+	const hasChanged =
+		changed === true ||
+		(typeof changed === "object" && changed.value) ||
+		(changed === "auto" && previous !== undefined && !isEqual(value, previous));
+	return (
+		<>
+			<div
+				class="contents"
+				data-swap={
+					hasChanged && previous
+						? (children?.(previous) ?? previous).toString()
+						: undefined
+				}
+			>
+				{children?.(value) ?? value}
+			</div>
+
+			{(hasChanged || (typeof changed === "object" && changed.display)) && (
+				<ChangedDot />
+			)}
+		</>
 	);
 };
 
