@@ -9,6 +9,7 @@ const fonts = [comicReliefWoff2];
 
 export const renderer = factory.defineMiddleware(
 	jsxRenderer(({ children }, c) => {
+		c.header("vary", "hx-boosted");
 		const htmxBoost = c.req.header("hx-boosted") === "true";
 		if (htmxBoost) {
 			c.header("hx-reswap", "innerHTML");
