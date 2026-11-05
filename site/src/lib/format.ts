@@ -1,3 +1,5 @@
+import { memoize } from "es-toolkit";
+
 const stripFormatRegex = (() => {
 	const keywords = [
 		"b",
@@ -11,5 +13,6 @@ const stripFormatRegex = (() => {
 	];
 	return new RegExp(`\\[/?(${keywords.join("|")}).*?\\]`, "gi");
 })();
-export const stripFormat = (s: string) =>
-	s.replace(stripFormatRegex, "").trim();
+export const stripFormat = memoize((s: string) =>
+	s.replace(stripFormatRegex, "").trim(),
+);

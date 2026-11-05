@@ -1,13 +1,16 @@
 import { cn } from "cn";
 import { chunk, startCase } from "es-toolkit";
 import { cache } from "hono/cache";
+import { raw } from "hono/html";
 import { basePath } from "hono/route";
+import MiniSearch from "minisearch";
 
 import { formatDate } from "@hina-record/shared/date";
 import { db, GBP, redis } from "@hina-record/shared/db";
 import { factory } from "~/factory";
 import { Icon } from "~/lib/components/icon";
 import { stripFormat } from "~/lib/format";
+import { filterTerms, highlight } from "~/lib/highlight";
 import { ChangedDot, CollapseWrapper, Display } from "./peek.display";
 
 const app = factory.createApp();
@@ -15,7 +18,7 @@ if (import.meta.env.PROD)
 	app.use(cache({ cacheName: "routes.peek", cacheControl: "max-age=3600" }));
 
 export const peekApp = app
-	.get("/list", async (c) => {
+	.get("/list/:page{[1-9]+}?", async (c) => {
 		const getProfile = ([uid, lastUpdated]: number[]) =>
 			db().query.profileSnapshots.findFirst({
 				columns: {
@@ -39,8 +42,8 @@ export const peekApp = app
 				},
 			});
 
-		const latest = await redis()
-			.zrange<number[]>(GBP.players, 0, import.meta.env.DEV ? 10 : -1, {
+		const players = await redis()
+			.zrange<number[]>(GBP.players, 0, import.meta.env.DEV ? 40 : -1, {
 				withScores: true,
 				rev: true,
 			})
@@ -54,19 +57,75 @@ export const peekApp = app
 					.then((profiles) => profiles.filter((it) => it !== undefined)),
 			);
 
+		const query = c.req.query("q")?.trim().toLowerCase();
+		const { results, suggestions = [] } = (() => {
+			type Player = (typeof players)[number];
+			type PlayerDefault = Player & { score: undefined; highlight: undefined };
+
+			if (!query) return { results: players as PlayerDefault[] };
+
+			const lookup = new Map(players.map((player) => [player.uid, player]));
+			if (lookup.has(query))
+				return { results: [lookup.get(query) as PlayerDefault] };
+
+			const fields = ["username", "introduction"] as const;
+			const index = new MiniSearch<Player>({
+				idField: "uid",
+				fields: [...fields],
+				processTerm: (term) => stripFormat(term).toLowerCase(),
+				searchOptions: {
+					combineWith: "OR",
+					fuzzy: true,
+					prefix: true,
+					boost: { username: 1.5 },
+				},
+			});
+			index.addAll(players);
+
+			return {
+				results: index.search(query).map(({ id, match, score }) => {
+					const data = lookup.get(id) as Player;
+					return {
+						...data,
+						score,
+						highlight: (key: (typeof fields)[number]) => {
+							const terms = filterTerms(match, key);
+							return highlight(stripFormat(data[key]), terms);
+						},
+					};
+				}),
+				suggestions: index
+					.autoSuggest(query)
+					.map(({ suggestion }) => suggestion)
+					.filter((value) => value.length > 2)
+					.slice(0, 10),
+			};
+		})();
+
+		results.sort(
+			(a, b) =>
+				(b.score ?? 0) - (a.score ?? 0) ||
+				stripFormat(a.username).localeCompare(stripFormat(b.username)),
+		);
+
+		const PAGE_SIZE = 20;
+		const page = Number(c.req.param("page") ?? 1);
+		const offset = (page - 1) * PAGE_SIZE;
+		const items = results.slice(offset, offset + PAGE_SIZE);
+		const nextPage =
+			results.length > offset + PAGE_SIZE
+				? [basePath(c), "list", page + 1].join("/")
+				: undefined;
+
 		return c.render(
 			<>
 				<div class="flex-1">
 					<div
 						class="list grid sm:grid-cols-2 lg:grid-cols-3"
+						id="peek-list"
 						hx-boost:inherited="true"
-						hx-on:load={[
-							`let rows = q(".list-row in this").arr();`,
-							`rows.sort((a, b) => Number(b.dataset.timestamp) - Number(a.dataset.timestamp) || a.dataset.keywords.localeCompare(b.dataset.keywords));`,
-							`for (let row of rows) this.appendChild(row);`,
-						].join("\n")}
 					>
-						{latest.map(
+						{items.map(
 							({
 								uid,
 								timestamp,
@@ -74,18 +133,10 @@ export const peekApp = app
 								profileCard,
 								introduction,
 								changes,
+								highlight,
 							}) => (
 								<a
 									class="list-row hover:bg-base-content/10 htmx:bg-base-content/10"
-									data-keywords={[
-										username,
-										introduction,
-										...changes.map(({ value }) => value),
-									]
-										.map((s) => stripFormat(s).toLowerCase())
-										.join("\t")}
-									data-timestamp={timestamp.getTime()}
-									data-uid={uid}
 									href={[basePath(c), uid].join("/")}
 								>
 									{profileCard && (
@@ -100,8 +151,16 @@ export const peekApp = app
 									)}
 
 									<div class="flex flex-col gap-1">
-										<div>{stripFormat(username)}</div>
-										<div class="text-xs">{stripFormat(introduction)}</div>
+										<div>
+											{highlight
+												? raw(highlight("username"))
+												: stripFormat(username)}
+										</div>
+										<div class="text-xs">
+											{highlight
+												? raw(highlight("introduction"))
+												: stripFormat(introduction)}
+										</div>
 										<div class="flex flex-wrap gap-0.5">
 											<div class="badge badge-primary badge-soft badge-xs">
 												{formatDate(timestamp)}
@@ -119,18 +178,54 @@ export const peekApp = app
 							),
 						)}
 					</div>
+
+					{nextPage ? (
+						<div
+							class="col-span-full mt-4 flex"
+							hx-swap-oob="true"
+							id="load-more-players"
+						>
+							<button
+								class="btn btn-accent btn-outline mx-auto w-full sm:w-1/3"
+								hx-get={query ? `${nextPage}?q=${query}` : nextPage}
+								hx-select=".list-row"
+								hx-swap="append"
+								hx-target="#peek-list"
+								type="button"
+							>
+								<Icon name="pixelarticons--list" />
+								Load more
+							</button>
+						</div>
+					) : (
+						<div hx-swap-oob="true" id="load-more-players"></div>
+					)}
 				</div>
 
-				<input
-					class="input input-secondary sticky bottom-4 mt-4 w-full sm:bottom-6 sm:left-1/2 sm:w-1/3 sm:-translate-x-1/2"
-					hx-live={[
-						`let term = this.value.trim().toLowerCase();`,
-						`for (let e of q("previous .list").q(".list-row"))`,
-						`  e.classList.toggle("hidden", term && !e.dataset.keywords.includes(term) && e.dataset.uid !== term)`,
-					].join("\n")}
-					placeholder="Search..."
-					type="text"
-				/>
+				<div class="sticky bottom-4 mt-4 flex w-full sm:bottom-6">
+					<label class="input input-secondary mx-auto w-full sm:w-1/3">
+						<Icon name="pixelarticons--search" />
+						<input
+							hx-get={c.req.path}
+							hx-indicator="closest .input"
+							hx-select="#peek-list"
+							hx-select-oob="#players-suggestions"
+							hx-swap="outerSync"
+							hx-target="#peek-list"
+							hx-trigger="input delay:300ms, keyup[key=='Enter']"
+							list="players-suggestions"
+							name="q"
+							placeholder="Search..."
+							type="text"
+						/>
+
+						<datalist id="players-suggestions">
+							{suggestions.map((value) => (
+								<option value={value}></option>
+							))}
+						</datalist>
+					</label>
+				</div>
 			</>,
 		);
 	})
