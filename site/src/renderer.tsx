@@ -1,11 +1,13 @@
 import comicReliefWoff2 from "@fontsource/comic-relief/files/comic-relief-latin-400-normal.woff2?url";
+import { raw } from "hono/html";
 import { jsxRenderer, useRequestContext } from "hono/jsx-renderer";
 import { Link, Script, ViteClient } from "vite-ssr-components/hono";
 
 import { factory } from "./factory";
 import { Icon, type IconProps } from "./lib/components/icon";
 
-const fonts = [comicReliefWoff2];
+const FONTS_PRELOAD = [comicReliefWoff2];
+const THEME = { light: "latte", dark: "macchiato" } as const;
 
 export const renderer = factory.defineMiddleware(
 	jsxRenderer(({ children }) => {
@@ -13,6 +15,15 @@ export const renderer = factory.defineMiddleware(
 			<html lang="en">
 				<head>
 					<meta charset="utf-8" />
+					<script>
+						{raw(
+							[
+								`let theme = localStorage.getItem("theme") ??`,
+								`  (window.matchMedia("(prefers-color-scheme: dark)").matches ? "${THEME.dark}" : "${THEME.light}");`,
+								`document.documentElement.dataset.theme = theme;`,
+							].join("\n"),
+						)}
+					</script>
 					<meta
 						content="width=device-width, initial-scale=1.0"
 						name="viewport"
@@ -20,7 +31,7 @@ export const renderer = factory.defineMiddleware(
 					<ViteClient />
 
 					<Link href="/src/styles/global.css" rel="stylesheet" />
-					{fonts.map((href) => (
+					{FONTS_PRELOAD.map((href) => (
 						<link
 							as="font"
 							crossorigin="anonymous"
@@ -112,36 +123,30 @@ const MegaMenu = () => {
 	);
 };
 
-const ThemeSwitcher = () => {
-	const THEME = { light: "latte", dark: "macchiato" } as const;
-
-	return (
-		<label
-			class="btn btn-square btn-md btn-outline border-base-content/10"
-			type="button"
+const ThemeSwitcher = () => (
+	<label
+		class="btn btn-square btn-md btn-outline border-base-content/10"
+		type="button"
+	>
+		<div
+			class="swap swap-rotate"
+			hx-preserve="true"
+			hx-on:load={[
+				`let theme = document.documentElement.dataset.theme;`,
+				`q("input in this").checked = theme === "${THEME.dark}";`,
+			].join("\n")}
 		>
-			<div
-				class="swap swap-rotate"
-				hx-preserve="true"
-				hx-on:load={[
-					`let theme = localStorage.getItem("theme") ??`,
-					`  (window.matchMedia("(prefers-color-scheme: dark)").matches ? "${THEME.dark}" : "${THEME.light}");`,
+			<input
+				hx-on:input={[
+					`let theme = this.checked ? "${THEME.dark}" : "${THEME.light}";`,
+					`localStorage.setItem("theme", theme);`,
 					`document.documentElement.dataset.theme = theme;`,
-					`q("input in this").checked = theme === "${THEME.dark}";`,
 				].join("\n")}
-			>
-				<input
-					hx-on:input={[
-						`let theme = this.checked ? "${THEME.dark}" : "${THEME.light}";`,
-						`localStorage.setItem("theme", theme);`,
-						`document.documentElement.dataset.theme = theme;`,
-					].join("\n")}
-					type="checkbox"
-				/>
+				type="checkbox"
+			/>
 
-				<Icon class="swap-off" name="pixelarticons--sun" size="size-5" />
-				<Icon class="swap-on" name="pixelarticons--moon" size="size-5" />
-			</div>
-		</label>
-	);
-};
+			<Icon class="swap-off" name="pixelarticons--sun" size="size-5" />
+			<Icon class="swap-on" name="pixelarticons--moon" size="size-5" />
+		</div>
+	</label>
+);
