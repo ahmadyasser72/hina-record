@@ -76,7 +76,7 @@ export const peekApp = app
 								changes,
 							}) => (
 								<a
-									class="list-row hover:bg-base-content/10"
+									class="list-row hover:bg-base-content/10 htmx:bg-base-content/10"
 									data-keywords={[
 										username,
 										introduction,
@@ -107,18 +107,14 @@ export const peekApp = app
 												{formatDate(timestamp)}
 											</div>
 											{changes.map(({ value }) => (
-												<div class="badge badge-xs badge-secondary">
+												<div class="badge badge-secondary badge-xs">
 													{startCase(value)}
 												</div>
 											))}
 										</div>
 									</div>
 
-									<Icon
-										class="loader my-auto"
-										name="svg-spinners--90-ring-with-bg"
-										size="size-5"
-									/>
+									<div class="iconify loader my-auto" size="size-8" />
 								</a>
 							),
 						)}
@@ -126,14 +122,13 @@ export const peekApp = app
 				</div>
 
 				<input
-					class="input input-secondary sticky bottom-4 left-1/2 mt-4 w-1/3 -translate-x-1/2 sm:bottom-6"
+					class="input input-secondary sticky bottom-4 mt-4 w-full sm:bottom-6 sm:left-1/2 sm:w-1/3 sm:-translate-x-1/2"
 					hx-live={[
 						`let term = this.value.trim().toLowerCase();`,
 						`for (let e of q("previous .list").q(".list-row"))`,
 						`  e.classList.toggle("hidden", term && !e.dataset.keywords.includes(term) && e.dataset.uid !== term)`,
 					].join("\n")}
-					hx-on:load="this.focus()"
-					placeholder="Search"
+					placeholder="Search..."
 					type="text"
 				/>
 			</>,
