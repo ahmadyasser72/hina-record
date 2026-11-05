@@ -1,22 +1,14 @@
 import comicReliefWoff2 from "@fontsource/comic-relief/files/comic-relief-latin-400-normal.woff2?url";
-import { jsxRenderer } from "hono/jsx-renderer";
+import { jsxRenderer, useRequestContext } from "hono/jsx-renderer";
 import { Link, Script, ViteClient } from "vite-ssr-components/hono";
 
 import { factory } from "./factory";
-import { Icon } from "./lib/components/icon";
+import { Icon, type IconProps } from "./lib/components/icon";
 
 const fonts = [comicReliefWoff2];
 
 export const renderer = factory.defineMiddleware(
-	jsxRenderer(({ children }, c) => {
-		c.header("vary", "hx-boosted");
-		const htmxBoost = c.req.header("hx-boosted") === "true";
-		if (htmxBoost) {
-			c.header("hx-reswap", "innerHTML");
-			c.header("hx-retarget", "#content");
-			return <>{children}</>;
-		}
-
+	jsxRenderer(({ children }) => {
 		return (
 			<html lang="en">
 				<head>
@@ -62,43 +54,63 @@ export const renderer = factory.defineMiddleware(
 	}),
 );
 
-const MegaMenu = () => (
-	<div
-		class="megamenu border-base-content/10 not-dark:shadow-sm dark:border"
-		hx-on={[
-			`htmx:finally:request -> event.detail.ctx.sourceElement.closest("[popover]").hidePopover();`,
-			`htmx:before:request -> if (event.detail.ctx.request.action === location.pathname) event.preventDefault()`,
-		].join("\n")}
-		id="megamenu"
-		hx-boost:inherited="true"
-		popover
-	>
-		<span class="megamenu-active"></span>
+const MegaMenu = () => {
+	const c = useRequestContext();
+	const links = [
+		{
+			href: "/",
+			label: "Home",
+			icon: "pixelarticons--home",
+		},
+		{
+			href: "/peek/list",
+			label: "Peek",
+			icon: "pixelarticons--avatar-circle",
+		},
+	] satisfies {
+		href: string;
+		label: string;
+		icon: IconProps["name"];
+	}[];
 
-		<button class="w-32" popovertarget="megamenu-menu" type="button">
-			<Icon name="pixelarticons--tab" size="size-5" />
-			Menu
-		</button>
-		<div class="dark:border-base-content/10" id="megamenu-menu" popover>
-			<div class="flex items-start max-sm:flex-col">
-				<ul class="menu md:menu-horizontal w-32 *:w-full">
-					<li>
-						<a href="/">
-							<Icon name="pixelarticons--home" />
-							Home
-						</a>
-					</li>
-					<li>
-						<a href="/peek/list">
-							<Icon name="pixelarticons--avatar-circle" />
-							Peek
-						</a>
-					</li>
-				</ul>
+	return (
+		<div
+			class="megamenu border-base-content/10 not-dark:shadow-sm dark:border"
+			hx-on={`htmx:finally:request -> event.detail.ctx.sourceElement.closest("[popover]").hidePopover();`}
+			id="megamenu"
+			hx-boost:inherited="true"
+			popover
+		>
+			<span class="megamenu-active"></span>
+
+			<button class="w-32" popovertarget="megamenu-menu" type="button">
+				<Icon name="pixelarticons--tab" size="size-5" />
+				Menu
+			</button>
+			<div class="dark:border-base-content/10" id="megamenu-menu" popover>
+				<div class="flex items-start max-sm:flex-col">
+					<ul class="menu md:menu-horizontal w-32 *:w-full">
+						{links.map(({ href, label, icon }) => (
+							<li>
+								{c.req.path === href ? (
+									<span>
+										<Icon name={icon} />
+										{label}
+									</span>
+								) : (
+									<a href={href}>
+										<Icon name={icon} />
+										{label}
+									</a>
+								)}
+							</li>
+						))}
+					</ul>
+				</div>
 			</div>
 		</div>
-	</div>
-);
+	);
+};
 
 const ThemeSwitcher = () => {
 	const THEME = { light: "latte", dark: "macchiato" } as const;
