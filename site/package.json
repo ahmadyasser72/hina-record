@@ -11,8 +11,8 @@
 	},
 	"dependencies": {
 		"@hina-record/shared": "workspace:*",
-		"cn": "0.5.1",
-		"es-toolkit": "1.53.1",
+		"cn": "0.5.2",
+		"es-toolkit": "1.53.2",
 		"hono": "5.0.0-rc.1",
 		"htmx.org": "4.0.1",
 		"minisearch": "7.2.0"
@@ -25,14 +25,14 @@
 		"@iconify-json/pixelarticons": "1.2.10",
 		"@iconify-json/svg-spinners": "1.2.4",
 		"@iconify/tailwind4": "1.2.3",
-		"@tailwindcss/vite": "4.3.3",
+		"@tailwindcss/vite": "4.3.5",
 		"@types/bun": "1.4.4",
 		"@types/node": "26.6.6",
 		"daisyui": "^5.7.50",
-		"tailwindcss": "4.3.3",
+		"tailwindcss": "4.3.5",
 		"typescript": "7.0.2",
 		"vite": "^8.1.4",
-		"vite-ssr-components": "^0.8.0",
+		"vite-ssr-components": "^0.9.0",
 		"wrangler": "^4.110.0"
 	}
 }
