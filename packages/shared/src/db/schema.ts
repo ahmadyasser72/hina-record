@@ -163,7 +163,7 @@ export const profileSnapshots = snakeCase.table(
 		id: integer().primaryKey({ autoIncrement: true }),
 		uid: text().notNull(),
 		timestamp: integer({ mode: "timestamp_ms" }).notNull(),
-		previousId: integer(),
+		previousId: integer().unique(),
 
 		username: text().notNull(),
 		rank: integer().notNull(),

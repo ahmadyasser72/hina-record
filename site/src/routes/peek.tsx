@@ -19,7 +19,7 @@ if (import.meta.env.PROD)
 
 export const peekApp = app
 	.get("/list/:page{[1-9]+}?", async (c) => {
-		const getProfile = ([uid, lastUpdated]: number[]) =>
+		const getProfile = ([, id]: number[]) =>
 			db().query.profileSnapshots.findFirst({
 				columns: {
 					uid: true,
@@ -28,11 +28,7 @@ export const peekApp = app
 					profileCard: true,
 					introduction: true,
 				},
-				where: {
-					timestamp: { lte: new Date(lastUpdated) },
-					uid: uid.toString(),
-					changes: true,
-				},
+				where: { id: { lte: id }, changes: true },
 				orderBy: { timestamp: "desc" },
 				with: {
 					changes: {

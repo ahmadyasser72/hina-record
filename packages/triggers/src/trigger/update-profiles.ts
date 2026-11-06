@@ -4,15 +4,7 @@ import {
 	schemaTask,
 	tags,
 } from "@trigger.dev/sdk";
-import {
-	chunk,
-	groupBy,
-	isEqual,
-	mapValues,
-	omit,
-	pick,
-	shuffle,
-} from "es-toolkit";
+import { chunk, isEqual, mapValues, omit, pick, shuffle } from "es-toolkit";
 import z from "zod";
 
 import { dayjs, GBP_TIME_ZONE } from "@hina-record/shared/date";
@@ -57,8 +49,8 @@ export const updateProfiles = schedules.task({
 			.exec<[number[], string]>();
 		if (!version) return;
 
-		const uids = chunk(players, 2).map(([uid, lastUpdated]) => ({
-			lastUpdated: lastUpdated > 0 ? new Date(lastUpdated) : undefined,
+		const uids = chunk(players, 2).map(([uid, latest]) => ({
+			latest: latest || undefined,
 			value: uid.toString(),
 		}));
 
@@ -68,35 +60,25 @@ export const updateProfiles = schedules.task({
 			bestdori.cards(),
 			bestdori.musics(),
 			(async () => {
-				const withPrevious = uids.filter(
-					(uid): uid is { value: string; lastUpdated: Date } =>
-						uid.lastUpdated instanceof Date,
-				);
-				if (withPrevious.length === 0) return;
+				const ids = uids
+					.map(({ latest }) => latest)
+					.filter((id) => typeof id === "number");
+				if (ids.length === 0) return;
+
+				const get = (id: number) =>
+					db().query.profileSnapshots.findFirst({
+						columns: { proto: false },
+						where: { id: { lte: id }, timestamp: { lt: today } },
+						orderBy: { id: "desc" },
+					});
 
 				return db()
-					.query.profileSnapshots.findMany({
-						columns: { proto: false },
-						where: {
-							OR: Object.entries(
-								groupBy(withPrevious, ({ lastUpdated }) =>
-									lastUpdated.toISOString(),
-								),
-							).map(([lastUpdated, uids]) => {
-								const timestamp = new Date(lastUpdated);
-								return {
-									timestamp: isEqual(timestamp, today)
-										? { lt: today }
-										: { eq: timestamp },
-									uid: { in: uids.map(({ value }) => value) },
-								};
-							}),
-						},
-						orderBy: { id: "desc" },
-					})
+					.batch(ids.map(get) as [ReturnType<typeof get>])
 					.then((snapshots) =>
 						Object.fromEntries(
-							snapshots.map((snapshot) => [snapshot.uid, snapshot]),
+							snapshots
+								.filter((snapshot) => snapshot !== undefined)
+								.map((snapshot) => [snapshot.uid, snapshot]),
 						),
 					);
 			})(),
@@ -238,10 +220,7 @@ export const updateProfile = schemaTask({
 						),
 					},
 				})
-				.returning({
-					timestamp: profileSnapshots.timestamp,
-					uid: profileSnapshots.uid,
-				}),
+				.returning({ id: profileSnapshots.id, uid: profileSnapshots.uid }),
 			...(changes.length > 0
 				? [
 						db()
@@ -256,10 +235,9 @@ export const updateProfile = schemaTask({
 		await tags.add(`upsert_${changed.length}`);
 		await redis().zadd(
 			GBP.players,
-			...(changed.map(({ uid, timestamp }) => ({
-				member: uid,
-				score: timestamp.getTime(),
-			})) as [{ member: string; score: number }]),
+			...(changed.map(({ uid, id }) => ({ member: uid, score: id })) as [
+				{ member: string; score: number },
+			]),
 		);
 	},
 });
