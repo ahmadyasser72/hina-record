@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+import "tracker_ranking.proto";
+
+message DefaultRanking {
+  RankingUserList top = 2;
+}

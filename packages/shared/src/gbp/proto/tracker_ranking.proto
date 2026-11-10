@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+import "profile.proto";
+
+message RankingUser {
+  string name = 1;
+  uint32 rank = 5;
+  uint64 point = 6;
+  uint64 uid = 7;
+  UserSituationList userSituationList = 10;
+}
+
+message RankingUserList {
+  repeated RankingUser entries = 1;
+}
+
+message MusicRankingResponse {
+  uint32 id = 1;
+  RankingUserList top = 3;
+}

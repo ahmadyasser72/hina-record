@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+import "tracker_ranking_challenge.proto";
+import "tracker_ranking_default.proto";
+import "tracker_ranking_medley.proto";
+import "tracker_ranking_versus.proto";
+
+message TrackerSnapshot {
+  oneof snapshot {
+    ChallengeRanking challenge = 1;
+    VersusRanking versus = 2;
+    DefaultRanking live_try = 3;
+    DefaultRanking mission_live = 4;
+    DefaultRanking festival = 5;
+    MedleyRanking medley = 6;
+    DefaultRanking monthly = 7;
+  }
+}

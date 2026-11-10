@@ -1,11 +1,12 @@
 import { defineConfig } from "@trigger.dev/sdk";
 
 export default defineConfig({
-	dirs: ["./src/trigger"],
-	logLevel: "log",
-	machine: "micro",
-	maxDuration: 3600,
 	project: "proj_wdpzvybnzuekyeleptli",
+	dirs: ["./src/trigger"],
+	runtime: "bun-1.4",
+	machine: "micro",
+	logLevel: "log",
+	maxDuration: 3600,
 	retries: {
 		default: {
 			factor: 2,
@@ -16,5 +17,4 @@ export default defineConfig({
 		},
 		enabledInDev: true,
 	},
-	runtime: "node-26",
 });

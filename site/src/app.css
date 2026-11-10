@@ -1,0 +1,37 @@
+@import "tailwindcss";
+
+@import "@skeletonlabs/skeleton";
+@import "@skeletonlabs/skeleton-svelte";
+@import "@skeletonlabs/skeleton/themes/mona";
+
+@import "@fontsource/comic-relief";
+@import "@fontsource/kiwi-maru";
+
+[data-theme="mona"] {
+	--typo-heading--font-family: "Comic Relief", "Kiwi Maru", sans-serif;
+	--typo-base--font-family: "Comic Relief", "Kiwi Maru", sans-serif;
+	--typo-anchor--font-family: "inherit";
+}
+
+body[data-theme="mona"] {
+	background-image:
+		radial-gradient(
+			at 27% 89%,
+			color-mix(in oklab, var(--color-primary-500) 30%, transparent) 0px,
+			transparent 30%
+		),
+		radial-gradient(
+			at 65% 8%,
+			color-mix(in oklab, var(--color-success-500) 18%, transparent) 0px,
+			transparent 30%
+		),
+		radial-gradient(
+			at 94% 73%,
+			color-mix(in oklab, var(--color-error-500) 3%, transparent) 0px,
+			transparent 40%
+		);
+	background-attachment: fixed;
+	background-position: center;
+	background-repeat: no-repeat;
+	background-size: cover;
+}

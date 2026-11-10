@@ -1,11 +1,19 @@
 {
 	"name": "@hina-record/root",
-	"type": "module",
 	"workspaces": [
 		"site",
 		"packages/*"
 	],
+	"type": "module",
+	"scripts": {
+		"lint": "oxlint",
+		"lint:fix": "oxlint --fix",
+		"fmt": "oxfmt",
+		"fmt:check": "oxfmt --check"
+	},
 	"devDependencies": {
-		"@biomejs/biome": "2.6.5"
+		"@biomejs/biome": "2.6.5",
+		"oxfmt": "0.78.0",
+		"oxlint": "1.93.0"
 	}
 }

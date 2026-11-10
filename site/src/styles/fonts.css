@@ -1,6 +1,0 @@
-@import "@fontsource/comic-relief/index.css";
-@import "@fontsource/kiwi-maru/index.css";
-
-@theme inline {
-	--font-sans: "Comic Relief", "Kiwi Maru", serif;
-}

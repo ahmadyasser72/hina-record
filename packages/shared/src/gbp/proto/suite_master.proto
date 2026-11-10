@@ -1,0 +1,257 @@
+syntax = "proto3";
+
+message SuiteMasterGetResponse {
+  MasterMusicListGetResponse masterMusicList = 1;
+  MasterCharacterSituationMap masterCharacterSituationMap = 4;
+  MasterSituationSkillMap masterSituationSkillMap = 8;
+  MasterAreaItemMap masterAreaItemMap = 9;
+  MasterSkillList masterSkillList = 51;
+  MasterEventMap masterEventMap = 101;
+  MasterChallengeEventMap masterChallengeEventMap = 207;
+  MasterVersusEventMap masterVersusEventMap = 211;
+  MasterLiveTryEventMap masterLiveTryEventMap = 213;
+  MasterMissionLiveEventMap masterMissionLiveEventMap = 215;
+  MasterFestivalEventMap masterFestivalEventMap = 815;
+  MasterMedleyEventMap masterMedleyEventMap = 1161;
+  MasterMonthlyRankingList masterMonthlyRankingList = 2084;
+}
+
+message MasterMusicListGetResponse {
+  repeated MasterMusicGetResponse entries = 1;
+}
+
+message MasterMusicGetResponse {
+  uint32 id = 1;
+  string title = 2;
+  string jacketImage = 14;
+}
+
+message MasterCharacterSituationMap {
+  map<uint32, MasterCharacterSituation> entries = 1;
+}
+
+message MasterCharacterSituation {
+  uint32 characterId = 2;
+  uint32 rarity = 3;
+  string gachaText = 4;
+  string attribute = 5;
+  uint32 situationSkillId = 7;
+  map<uint32, MasterSituationParameter> parameterMap = 8;
+  string prefix = 10;
+  string resourceSetName = 12;
+}
+
+message MasterSituationParameter {
+  uint32 performance = 3;
+  uint32 technique = 4;
+  uint32 visual = 5;
+}
+
+message MasterSituationSkillMap {
+  map<uint32, MasterSituationSkill> entries = 1;
+}
+
+message MasterSituationSkill {
+  string name = 2;
+  uint32 skillId = 3;
+}
+
+message MasterAreaItemMap {
+  map<uint32, MasterAreaItem> entries = 1;
+}
+
+message MasterAreaItem {
+  uint32 categoryId = 2;
+  uint32 level = 3;
+  string areaItemName = 4;
+  float performance = 8;
+  float technique = 9;
+  float visual = 10;
+  repeated string targetAttributes = 12;
+  uint32 resourceId = 13;
+  repeated uint32 characterIds = 15;
+  repeated uint32 targetBandIds = 16;
+}
+
+message MasterSkillList {
+  repeated MasterSkill entries = 1;
+}
+
+message MasterSkill {
+  uint32 id = 1;
+  uint32 level = 2;
+  float duration = 3;
+  string description = 4;
+}
+
+message MasterEventMap {
+  map<uint32, MasterEvent> entries = 1;
+}
+
+message MasterEvent {
+  uint32 id = 1;
+  string type = 2;
+  string name = 3;
+  string assetBundleName = 4;
+  uint64 startAt = 5;
+  uint64 endAt = 6;
+}
+
+message MasterChallengeEventMap {
+  map<uint32, MasterChallengeEvent> entries = 1;
+}
+
+message MasterChallengeEvent {
+  uint32 id = 1;
+  repeated MasterEventAttribute attributes = 101;
+  repeated MasterEventCharacter characters = 102;
+  repeated MasterEventMusic musics = 104;
+  MasterEventCharacterParameterBonus eventCharacterParameterBonus = 106;
+  MasterEventAttributeAndCharacterBonus eventAttributeAndCharacterBonus = 107;
+  MasterEventMemberMap members = 108;
+  MasterLimitBreakBonusMap limitBreaks = 109;
+}
+
+message MasterVersusEventMap {
+  map<uint32, MasterVersusEvent> entries = 1;
+}
+
+message MasterVersusEvent {
+  uint32 id = 1;
+  repeated MasterEventAttribute attributes = 101;
+  repeated MasterEventCharacter characters = 102;
+  repeated MasterEventMusic musics = 104;
+  MasterEventCharacterParameterBonus eventCharacterParameterBonus = 105;
+  MasterEventAttributeAndCharacterBonus eventAttributeAndCharacterBonus = 106;
+  MasterEventMemberMap members = 107;
+  MasterLimitBreakBonusMap limitBreaks = 108;
+}
+
+message MasterLiveTryEventMap {
+  map<uint32, MasterLiveTryEvent> entries = 1;
+}
+
+message MasterLiveTryEvent {
+  uint32 id = 1;
+  repeated MasterEventAttribute attributes = 101;
+  repeated MasterEventCharacter characters = 102;
+  MasterEventAttributeAndCharacterBonus eventAttributeAndCharacterBonus = 206;
+  MasterEventMemberMap members = 207;
+  MasterLimitBreakBonusMap limitBreaks = 208;
+}
+
+message MasterMissionLiveEventMap {
+  map<uint32, MasterMissionLiveEvent> entries = 1;
+}
+
+message MasterMissionLiveEvent {
+  uint32 id = 1;
+  repeated MasterEventAttribute attributes = 2;
+  repeated MasterEventCharacter characters = 3;
+  MasterEventAttributeAndCharacterBonus eventAttributeAndCharacterBonus = 5;
+  MasterEventMemberMap members = 6;
+  MasterLimitBreakBonusMap limitBreaks = 7;
+}
+
+message MasterFestivalEventMap {
+  map<uint32, MasterFestivalEvent> entries = 1;
+}
+
+message MasterFestivalEvent {
+  uint32 id = 1;
+  repeated MasterEventAttribute attributes = 2;
+  repeated MasterEventCharacter characters = 3;
+  MasterEventAttributeAndCharacterBonus eventAttributeAndCharacterBonus = 5;
+  repeated MasterEventMusic musics = 6;
+  MasterFestivalTeamList teamList = 7;
+  string themeTitle = 9;
+  MasterEventCharacterParameterBonus eventCharacterParameterBonus = 10;
+  MasterEventMemberMap members = 11;
+  MasterLimitBreakBonusMap limitBreaks = 12;
+}
+
+message MasterFestivalTeamList {
+  repeated MasterFestivalTeam entries = 1;
+}
+
+message MasterFestivalTeam {
+  uint32 id = 2;
+  string name = 3;
+  string iconFileName = 4;
+  string themeTitle = 5;
+}
+
+message MasterMedleyEventMap {
+  map<uint32, MasterMedleyEvent> entries = 1;
+}
+
+message MasterMedleyEvent {
+  uint32 id = 1;
+  repeated MasterEventAttribute attributes = 2;
+  repeated MasterEventCharacter characters = 3;
+  repeated MasterEventMusic musics = 5;
+  MasterEventCharacterParameterBonus eventCharacterParameterBonus = 6;
+  MasterEventAttributeAndCharacterBonus eventAttributeAndCharacterBonus = 7;
+  MasterEventMemberMap members = 8;
+  MasterLimitBreakBonusMap limitBreaks = 9;
+}
+
+message MasterEventAttribute {
+  string attribute = 2;
+  float percent = 3;
+}
+
+message MasterEventCharacter {
+  uint32 characterId = 2;
+  float percent = 3;
+}
+
+message MasterEventMusic {
+  uint32 id = 2;
+}
+
+message MasterEventCharacterParameterBonus {
+  float performance = 2;
+  float technique = 3;
+  float visual = 4;
+}
+
+message MasterEventAttributeAndCharacterBonus {
+  float pointPercent = 2;
+  float parameterPercent = 3;
+}
+
+message MasterEventMemberMap {
+  map<uint32, MasterEventMember> entries = 1;
+}
+
+message MasterEventMember {
+  uint32 situationId = 2;
+  float percent = 3;
+}
+
+message MasterLimitBreakBonusMap {
+  map<uint32, MasterLimitBreakBonusList> entries = 1;
+}
+
+message MasterLimitBreakBonusList {
+  repeated MasterLimitBreakBonus entries = 1;
+}
+
+message MasterLimitBreakBonus {
+  uint32 rarity = 1;
+  uint32 rank = 2;
+  float percent = 3;
+}
+
+message MasterMonthlyRankingList {
+  repeated MasterMonthlyRanking entries = 1;
+}
+
+message MasterMonthlyRanking {
+  uint32 id = 1;
+  string name = 2;
+  string assetBundleName = 3;
+  uint64 startAt = 6;
+  uint64 endAt = 7;
+}

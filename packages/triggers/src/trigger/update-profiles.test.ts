@@ -1,14 +1,10 @@
 import { beforeAll, describe, test } from "bun:test";
 
-import { fromBinary } from "@bufbuild/protobuf";
+import { db, GBP, redis } from "@hina-record/shared/db";
+import type { UserProfile } from "@hina-record/shared/gbp/gen/profile_pb";
 import { chunk, groupBy } from "es-toolkit";
 import z, { ZodError } from "zod";
 
-import { db, GBP, redis } from "@hina-record/shared/db";
-import {
-	type UserProfile,
-	UserProfileSchema,
-} from "@hina-record/shared/gbp/gen/profile_pb";
 import {
 	bestdori,
 	parseBandRank,
@@ -27,11 +23,9 @@ describe("parse", () => {
 
 		const uids = await redis()
 			.zrange<number[]>(GBP.players, 0, -1, { withScores: true })
-			.then((uids) =>
-				groupBy(chunk(uids, 2), ([, lastUpdated]) => lastUpdated),
-			);
+			.then((uids) => groupBy(chunk(uids, 2), ([, lastUpdated]) => lastUpdated));
 		const snapshots = await db().query.profileSnapshots.findMany({
-			columns: { proto: true },
+			columns: { data: true },
 			where: {
 				OR: Object.entries(uids).map(([lastUpdated, uids]) => ({
 					timestamp: { eq: new Date(Number(lastUpdated)) },
@@ -39,9 +33,7 @@ describe("parse", () => {
 				})),
 			},
 		});
-		latest.push(
-			...snapshots.map(({ proto }) => fromBinary(UserProfileSchema, proto)),
-		);
+		latest.push(...snapshots.map(({ data }) => data));
 	});
 
 	const tryParse = <K extends keyof UserProfile>(
@@ -74,9 +66,7 @@ describe("parse", () => {
 	});
 
 	test("parseHighScoreRating", () => {
-		tryParse("userHighScoreRating", (value) =>
-			parseHighScoreRating(musics, value),
-		);
+		tryParse("userHighScoreRating", (value) => parseHighScoreRating(musics, value));
 	});
 
 	test("parseMusicClear", () => {

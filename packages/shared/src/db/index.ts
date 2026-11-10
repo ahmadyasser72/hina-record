@@ -5,13 +5,18 @@ import { relations } from "./schema";
 
 export const db = once(() => {
 	const { DATABASE_URL, DATABASE_AUTH_TOKEN } = process.env;
-	if (!DATABASE_URL || !DATABASE_AUTH_TOKEN)
-		throw new Error("Database credentials are missing.");
+	if (!DATABASE_URL || !DATABASE_AUTH_TOKEN) throw new Error("Database credentials are missing.");
 
-	return drizzle({
-		connection: { authToken: DATABASE_AUTH_TOKEN, url: DATABASE_URL },
-		relations,
-	});
+	return createDB(DATABASE_URL, DATABASE_AUTH_TOKEN);
 });
+
+export const createDB = (url: string, authToken: string) =>
+	drizzle({
+		relations,
+		connection: { authToken, url },
+		jit: navigator.userAgent !== "Cloudflare-Workers",
+	});
+
+export { orderedId as createId } from "nope-id";
 
 export * from "./redis";

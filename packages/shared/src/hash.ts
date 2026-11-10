@@ -1,3 +1,3 @@
-import xxhash from "xxhash-wasm";
+import mod from "xxhash-wasm";
 
-export const hash = await xxhash();
+export const xxhash = await mod();

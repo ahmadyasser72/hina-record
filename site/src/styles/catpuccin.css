@@ -1,6 +1,0 @@
-@plugin "./catpuccin.latte.ts";
-@plugin "./catpuccin.macchiato.ts";
-
-@custom-variant dark (
-	&:where([data-theme="macchiato"], [data-theme="macchiato"] *)
-);

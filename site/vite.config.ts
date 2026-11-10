@@ -1,13 +1,20 @@
-import { cloudflare } from "@cloudflare/vite-plugin";
+import adapter from "@sveltejs/adapter-cloudflare";
+import { sveltekit } from "@sveltejs/kit/vite";
 import tailwindcss from "@tailwindcss/vite";
-import { cn } from "cn/vite";
 import { defineConfig } from "vite";
-import ssrPlugin from "vite-ssr-components/plugin";
 
 export default defineConfig({
-	plugins: [cloudflare(), ssrPlugin(), tailwindcss(), cn()],
-
-	resolve: {
-		tsconfigPaths: true,
-	},
+	plugins: [
+		tailwindcss(),
+		sveltekit({
+			compilerOptions: {
+				// Force runes mode for the project, except for libraries. Can be removed in svelte 6.
+				runes: ({ filename }) =>
+					filename.split(/[/\\]/).includes("node_modules") ? undefined : true,
+				experimental: { async: true },
+			},
+			adapter: adapter(),
+			experimental: { remoteFunctions: true, forkPreloads: true },
+		}),
+	],
 });

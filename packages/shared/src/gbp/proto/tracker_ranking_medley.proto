@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+import "tracker_ranking.proto";
+
+message MedleyRanking {
+  RankingUserList top = 2;
+  RankingUserList topMusic = 4;
+}

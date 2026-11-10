@@ -1,14 +1,14 @@
-import {
-	AbortTaskRunError,
-	schedules,
-	schemaTask,
-	tags,
-} from "@trigger.dev/sdk";
-import { chunk, isEqual, mapValues, omit, pick, shuffle } from "es-toolkit";
-import z from "zod";
-
-import { dayjs, GBP_TIME_ZONE } from "@hina-record/shared/date";
+import "zod/compile";
+import { dayjs } from "@hina-record/shared/date";
 import { db, GBP, redis } from "@hina-record/shared/db";
+import {
+	type NewProfileSnapshot,
+	type NewProfileSnapshotChange,
+	type ProfileSnapshot,
+	profileSnapshotChanges,
+	profileSnapshots,
+	SnapshotChange,
+} from "@hina-record/shared/db/schema";
 import {
 	GbpBand,
 	GbpCharacter,
@@ -17,13 +17,7 @@ import {
 	type MusicClear,
 	MusicClearKind,
 	MusicDifficulty,
-	type NewProfileSnapshot,
-	type NewProfileSnapshotChange,
-	type ProfileSnapshot,
-	profileSnapshotChanges,
-	profileSnapshots,
-	SnapshotChange,
-} from "@hina-record/shared/db/schema";
+} from "@hina-record/shared/db/schema/types";
 import type {
 	MapKeyUint32ValueUint32,
 	UserCharacterRankMap,
@@ -31,16 +25,17 @@ import type {
 	UserHighScoreRating,
 	UserMusicClearInfoMap,
 } from "@hina-record/shared/gbp/gen/profile_pb";
-
-import "zod/compile";
+import { AbortTaskRunError, schedules, schemaTask, tags } from "@trigger.dev/sdk";
 import { sql } from "drizzle-orm";
 import { createSelectSchema } from "drizzle-orm/zod";
+import { chunk, isEqual, mapValues, omit, pick, shuffle } from "es-toolkit";
+import z from "zod";
 
-import { bangDream, type GbpCredentials } from "../fetch";
+import { bangDream, type GbpCredentials } from "#root/fetch.ts";
 
 export const updateProfiles = schedules.task({
-	cron: { pattern: "50 23 * * *", timezone: GBP_TIME_ZONE },
 	id: "schedule-update-profiles",
+	cron: "0 0 * * *",
 	run: async ({ timestamp }) => {
 		const [players, version] = await redis()
 			.pipeline()
@@ -54,20 +49,18 @@ export const updateProfiles = schedules.task({
 			value: uid.toString(),
 		}));
 
-		const now = dayjs.tz(timestamp).startOf("hour").add(1, "hour");
+		const now = dayjs(timestamp);
 		const today = now.startOf("day").toDate();
 		const [cards, musics, previousSnapshots] = await Promise.all([
 			bestdori.cards(),
 			bestdori.musics(),
 			(async () => {
-				const ids = uids
-					.map(({ latest }) => latest)
-					.filter((id) => typeof id === "number");
+				const ids = uids.map(({ latest }) => latest).filter((id) => typeof id === "number");
 				if (ids.length === 0) return;
 
 				const get = (id: number) =>
 					db().query.profileSnapshots.findFirst({
-						columns: { proto: false },
+						columns: { data: false },
 						where: { id: { lte: id }, timestamp: { lt: today } },
 						orderBy: { id: "desc" },
 					});
@@ -130,9 +123,7 @@ export const updateProfile = schemaTask({
 		uids: z.array(
 			z.object({
 				value: z.string(),
-				previous: createSelectSchema(profileSnapshots)
-					.omit({ proto: true })
-					.optional(),
+				previous: createSelectSchema(profileSnapshots).omit({ data: true }).optional(),
 			}),
 		),
 		version: z.string(),
@@ -140,20 +131,24 @@ export const updateProfile = schemaTask({
 	concurrency: { total: 1 },
 	retry: { maxAttempts: 1 },
 
+	onStartAttempt: async ({ ctx }) => {
+		const credentials = await redis().hgetall(GBP.credentials.rolling);
+		if (!credentials) throw new AbortTaskRunError("BanG Dream credentials are missing.");
+		ctx.task.credentials = credentials;
+	},
 	onComplete: async ({ ctx }) => {
-		await redis().hset(GBP.credentials, {
+		await redis().hset(GBP.credentials.rolling, {
 			token: (ctx.task.credentials as GbpCredentials).token,
 		});
-	},
-	onStartAttempt: async ({ ctx }) => {
-		const credentials = await redis().hgetall(GBP.credentials);
-		if (!credentials)
-			throw new AbortTaskRunError("BanG Dream credentials are missing.");
-		ctx.task.credentials = credentials;
 	},
 
 	run: async ({ uids, today, version, metadata }, { ctx }) => {
 		const credentials = ctx.task.credentials as GbpCredentials;
+		const hashes =
+			(await redis().hmget<Partial<Record<string, number>>>(
+				GBP.responses,
+				...uids.map(({ value }) => `profile:${value}`),
+			)) ?? {};
 
 		const snapshots = [] as NewProfileSnapshot[];
 		const changes = [] as NewProfileSnapshotChange[];
@@ -162,14 +157,15 @@ export const updateProfile = schemaTask({
 			credentials.token = profile.response.token;
 
 			const { data, response } = profile;
-			if (previous?.hash === response.hash) continue;
+			const key = GBP.hash.profile(uid);
+			if (hashes[key] === response.hash) continue;
+			else hashes[key] = response.hash;
 
 			const current = {
 				uid,
 				timestamp: today,
 				previousId: previous?.id,
-				proto: Buffer.from(response.bytes),
-				hash: response.hash,
+				data,
 
 				username: data.userName,
 				introduction: data.introduction,
@@ -177,30 +173,24 @@ export const updateProfile = schemaTask({
 				bandRank: parseBandRank(data.bandRankMap),
 				characterRank: parseCharacterRank(data.userCharacterRankMap),
 				deckRating: parseDeckRating(data.userDeckTotalRatingMap),
-				highScoreRating: parseHighScoreRating(
-					metadata.musics,
-					data.userHighScoreRating,
-				),
+				highScoreRating: parseHighScoreRating(metadata.musics, data.userHighScoreRating),
 				musicClear: parseMusicClear(data.userMusicClearInfoMap),
 				profileCard: data.userProfileSituation?.situationId
 					? {
 							...pick(data.userProfileSituation, ["situationId", "illust"]),
 							resourceSetName:
-								metadata.cards[data.userProfileSituation.situationId]
-									.resourceSetName,
+								metadata.cards[data.userProfileSituation.situationId].resourceSetName,
 						}
 					: null,
-				stageChallenge: parseStageChallenge(
-					data.stageChallengeAchievementConditionsMap,
-				),
+				stageChallenge: parseStageChallenge(data.stageChallengeAchievementConditionsMap),
 			} satisfies NewProfileSnapshot;
 			snapshots.push(current);
 
 			if (!previous) continue;
 			changes.push(
-				...SnapshotChange.filter(
-					(change) => !isEqual(current[change], previous[change]),
-				).map((value) => ({ timestamp: today, uid, value })),
+				...SnapshotChange.filter((change) => !isEqual(current[change], previous[change])).map(
+					(value) => ({ timestamp: today, uid, value }),
+				),
 			);
 		}
 		if (snapshots.length === 0) return;
@@ -211,40 +201,35 @@ export const updateProfile = schemaTask({
 				.values(snapshots)
 				.onConflictDoUpdate({
 					target: [profileSnapshots.timestamp, profileSnapshots.uid],
-					set: {
-						...Object.fromEntries(
-							[...SnapshotChange, "hash" as const].map((change) => [
-								change,
-								sql.raw(`excluded.${profileSnapshots[change].name}`),
-							]),
-						),
-					},
+					set: Object.fromEntries(
+						SnapshotChange.map((change) => [
+							change,
+							sql.raw(`excluded.${profileSnapshots[change].name}`),
+						]),
+					),
 				})
 				.returning({ id: profileSnapshots.id, uid: profileSnapshots.uid }),
 			...(changes.length > 0
-				? [
-						db()
-							.insert(profileSnapshotChanges)
-							.values(changes)
-							.onConflictDoNothing(),
-					]
+				? [db().insert(profileSnapshotChanges).values(changes).onConflictDoNothing()]
 				: []),
 		]);
 		if (changed.length === 0) return;
 
 		await tags.add(`upsert_${changed.length}`);
-		await redis().zadd(
-			GBP.players,
-			...(changed.map(({ uid, id }) => ({ member: uid, score: id })) as [
-				{ member: string; score: number },
-			]),
-		);
+		await redis()
+			.pipeline()
+			.zadd(
+				GBP.players,
+				...(changed.map(({ uid, id }) => ({ member: uid, score: id })) as [
+					{ member: string; score: number },
+				]),
+			)
+			.hset(GBP.responses, hashes)
+			.exec();
 	},
 });
 
-export const parseBandRank = (
-	raw?: MapKeyUint32ValueUint32,
-): Record<GbpBand, number> | null => {
+export const parseBandRank = (raw?: MapKeyUint32ValueUint32): Record<GbpBand, number> | null => {
 	if (!raw?.entries || isEqual(raw.entries, {})) return null;
 
 	return z.record(z.enum(GbpBand), z.number()).parse(raw.entries);
@@ -263,9 +248,7 @@ export const parseCharacterRank = (
 		.parse(raw.entries);
 };
 
-export const parseDeckRating = (
-	raw?: UserDeckTotalRatingMap,
-): ProfileSnapshot["deckRating"] => {
+export const parseDeckRating = (raw?: UserDeckTotalRatingMap): ProfileSnapshot["deckRating"] => {
 	if (!raw?.entries || isEqual(raw.entries, {})) return null;
 
 	return z
@@ -334,9 +317,7 @@ export const parseHighScoreRating = (
 	};
 };
 
-export const parseMusicClear = (
-	raw?: UserMusicClearInfoMap,
-): ProfileSnapshot["musicClear"] => {
+export const parseMusicClear = (raw?: UserMusicClearInfoMap): ProfileSnapshot["musicClear"] => {
 	if (!raw?.entries || isEqual(raw.entries, {})) return null;
 
 	return z
@@ -354,12 +335,10 @@ export const parseMusicClear = (
 		.transform((value) => {
 			const hidden = new Set<MusicClearKind>();
 			for (const kind of MusicClearKind) {
-				if (MusicDifficulty.some((difficulty) => !!value[difficulty][kind]))
-					continue;
+				if (MusicDifficulty.some((difficulty) => !!value[difficulty][kind])) continue;
 
 				hidden.add(kind);
-				for (const difficulty of MusicDifficulty)
-					value[difficulty][kind] = null;
+				for (const difficulty of MusicDifficulty) value[difficulty][kind] = null;
 			}
 
 			return hidden.size === MusicClearKind.length ? null : value;
@@ -372,7 +351,5 @@ export const parseStageChallenge = (
 ): ProfileSnapshot["stageChallenge"] => {
 	if (!raw?.entries || isEqual(raw.entries, {})) return null;
 
-	return z
-		.record(z.enum(Object.keys(GbpStageChallenge)), z.number().catch(0))
-		.parse(raw.entries);
+	return z.record(z.enum(Object.keys(GbpStageChallenge)), z.number().catch(0)).parse(raw.entries);
 };

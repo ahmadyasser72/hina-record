@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+import "suite_master.proto";
+
+message TrackerMetadata {
+  oneof metadata {
+    ChallengeTracker challenge = 1;
+    VersusTracker versus = 2;
+    LiveTryTracker live_try = 3;
+    MissionLiveTracker mission_live = 4;
+    FestivalTracker festival = 5;
+    MedleyTracker medley = 6;
+    MasterMonthlyRanking monthly = 7;
+  }
+
+  string ranking_path = 8;
+}
+
+message LiveTryTracker {
+  MasterEvent event = 1;
+  MasterLiveTryEvent data = 2;
+}
+
+message MissionLiveTracker {
+  MasterEvent event = 1;
+  MasterMissionLiveEvent data = 2;
+}
+
+message FestivalTracker {
+  MasterEvent event = 1;
+  MasterFestivalEvent data = 2;
+}
+
+message ChallengeTracker {
+  MasterEvent event = 1;
+  MasterChallengeEvent data = 2;
+  repeated MasterMusicGetResponse musics = 3;
+}
+
+message VersusTracker {
+  MasterEvent event = 1;
+  MasterVersusEvent data = 2;
+  repeated MasterMusicGetResponse musics = 3;
+}
+
+message MedleyTracker {
+  MasterEvent event = 1;
+  MasterMedleyEvent data = 2;
+  repeated MasterMusicGetResponse musics = 3;
+}

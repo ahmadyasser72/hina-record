@@ -1,23 +1,27 @@
 {
 	"name": "@hina-record/shared",
 	"type": "module",
+	"imports": {
+		"#root/*": "./src/*"
+	},
 	"exports": {
 		"./db": "./src/db/index.ts",
-		"./db/*": "./src/db/*.ts",
-		"./date": "./src/date.ts",
-		"./hash": "./src/hash.ts",
-		"./gbp/*": "./src/gbp/*.ts"
+		"./db/schema": "./src/db/schema/index.ts",
+		"./db/types": "./src/db/schema/types.ts",
+		"./*": "./src/*.ts"
 	},
 	"scripts": {
-		"typecheck": "tsc --noEmit"
+		"check": "tsc --noEmit"
 	},
 	"dependencies": {
 		"@bufbuild/protobuf": "2.16.0",
 		"@libsql/client": "0.18.0",
 		"@upstash/redis": "1.39.0",
+		"base-unicode": "1.0.0",
 		"dayjs": "1.11.23",
 		"drizzle-orm": "1.0.0-rc.5-ab785fc",
 		"es-toolkit": "1.52.0",
+		"nope-id": "1.4.2",
 		"xxhash-wasm": "1.1.0"
 	},
 	"devDependencies": {
@@ -26,6 +30,6 @@
 		"@types/bun": "1.4.4",
 		"@types/node": "26.6.5",
 		"drizzle-kit": "1.0.0-rc.5-ab785fc",
-		"typescript": "6.0.3"
+		"typescript": "7.0.2"
 	}
 }

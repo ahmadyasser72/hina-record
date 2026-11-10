@@ -1,0 +1,8 @@
+import { defineEnvVars } from "@sveltejs/kit/env";
+
+export const variables = defineEnvVars({
+	DATABASE_URL: {},
+	DATABASE_AUTH_TOKEN: {},
+	UPSTASH_REDIS_REST_URL: {},
+	UPSTASH_REDIS_REST_TOKEN: {},
+});
