@@ -5,4 +5,6 @@ import "tracker_ranking.proto";
 message MedleyRanking {
   RankingUserList top = 2;
   RankingUserList topMusic = 4;
+  RankingUserList border = 5;
+  RankingUserList borderMusic = 6;
 }

@@ -4,4 +4,5 @@ import "tracker_ranking.proto";
 
 message DefaultRanking {
   RankingUserList top = 2;
+  RankingUserList border = 3;
 }

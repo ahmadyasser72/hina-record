@@ -17,4 +17,5 @@ message RankingUserList {
 message MusicRankingResponse {
   uint32 id = 1;
   RankingUserList top = 3;
+  RankingUserList border = 4;
 }

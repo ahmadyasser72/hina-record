@@ -5,4 +5,5 @@ import "tracker_ranking.proto";
 message VersusRanking {
   RankingUserList top = 2;
   repeated MusicRankingResponse musics = 3;
+  RankingUserList border = 4;
 }

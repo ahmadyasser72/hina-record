@@ -4,5 +4,6 @@ import "tracker_ranking.proto";
 
 message ChallengeRanking {
   RankingUserList top = 2;
+  RankingUserList border = 3;
   repeated MusicRankingResponse musics = 101;
 }
