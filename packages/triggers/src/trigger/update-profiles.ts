@@ -24,7 +24,12 @@ import type {
 	UserDeckTotalRatingMap,
 	UserHighScoreRating,
 	UserMusicClearInfoMap,
+	UserProfile,
 } from "@hina-record/shared/gbp/gen/profile_pb";
+import type {
+	MasterCharacterSituation,
+	MasterMusicGetResponse,
+} from "@hina-record/shared/gbp/gen/suite_master_pb";
 import { AbortTaskRunError, schedules, schemaTask, tags } from "@trigger.dev/sdk";
 import { sql } from "drizzle-orm";
 import { createSelectSchema } from "drizzle-orm/zod";
@@ -52,37 +57,32 @@ export const updateProfiles = schedules.task({
 
 		const now = dayjs(timestamp);
 		const today = now.startOf("day").toDate();
-		const [cards, musics, previousSnapshots] = await Promise.all([
-			bestdori.cards(),
-			bestdori.musics(),
-			(async () => {
-				const ids = uids.map(({ latest }) => latest).filter((id) => typeof id === "number");
-				if (ids.length === 0) return;
+		const previousSnapshots = await (async () => {
+			const ids = uids.map(({ latest }) => latest).filter((id) => typeof id === "number");
+			if (ids.length === 0) return;
 
-				const get = (id: number) =>
-					db().query.profileSnapshots.findFirst({
-						columns: { data: false },
-						where: { id: { lte: id }, timestamp: { lt: today } },
-						orderBy: { id: "desc" },
-					});
+			const get = (id: number) =>
+				db().query.profileSnapshots.findFirst({
+					columns: { data: false },
+					where: { id: { lte: id }, timestamp: { lt: today } },
+					orderBy: { id: "desc" },
+				});
 
-				return db()
-					.batch(ids.map(get) as [ReturnType<typeof get>])
-					.then((snapshots) =>
-						Object.fromEntries(
-							snapshots
-								.filter((snapshot) => snapshot !== undefined)
-								.map((snapshot) => [snapshot.uid, snapshot]),
-						),
-					);
-			})(),
-		]);
+			return db()
+				.batch(ids.map(get) as [ReturnType<typeof get>])
+				.then((snapshots) =>
+					Object.fromEntries(
+						snapshots
+							.filter((snapshot) => snapshot !== undefined)
+							.map((snapshot) => [snapshot.uid, snapshot]),
+					),
+				);
+		})();
 
 		await updateProfile.batchTrigger(
 			chunk(shuffle(uids), 100).map((uids, idx) => ({
 				options: { delay: now.add(idx * 3, "minutes").toDate() },
 				payload: {
-					metadata: { cards, musics },
 					today,
 					uids: uids.map(({ value }) => ({
 						value,
@@ -95,31 +95,9 @@ export const updateProfiles = schedules.task({
 	},
 });
 
-export const bestdori = {
-	cards: async () => {
-		const response = await fetch("https://bestdori.com/api/cards/all.5.json");
-		return bestdori.schema.cards.parse(await response.json());
-	},
-	musics: async () => {
-		const response = await fetch("https://bestdori.com/api/songs/all.5.json");
-		return bestdori.schema.musics.parse(await response.json());
-	},
-	schema: {
-		cards: z.record(z.number(), z.object({ resourceSetName: z.string() })),
-		musics: z.record(
-			z.number(),
-			z.object({
-				jacketImage: z.array(z.string()),
-				musicTitle: z.array(z.string().nullable()),
-			}),
-		),
-	},
-};
-
 export const updateProfile = schemaTask({
 	id: "update-profile",
 	schema: z.object({
-		metadata: z.object(bestdori.schema),
 		today: z.date(),
 		uids: z.array(
 			z.object({
@@ -143,7 +121,7 @@ export const updateProfile = schemaTask({
 		});
 	},
 
-	run: async ({ uids, today, version, metadata }, { ctx }) => {
+	run: async ({ uids, today, version }, { ctx }) => {
 		const credentials = ctx.task.credentials as GbpCredentials;
 		const hashes =
 			(await redis().hmget<Partial<Record<string, number>>>(
@@ -151,47 +129,77 @@ export const updateProfile = schemaTask({
 				...uids.map(({ value }) => `profile:${value}`),
 			)) ?? {};
 
-		const snapshots = [] as NewProfileSnapshot[];
-		const changes = [] as NewProfileSnapshotChange[];
-		for (const { value: uid, previous } of uids) {
-			const profile = await bangDream.profile(version, credentials, uid);
+		const situationIds = new Set<number>();
+		const profiles = new Map<string, UserProfile>();
+		for (let idx = 0; idx < uids.length; idx += 1) {
+			const uid = uids[idx];
+			const profile = await bangDream.profile(version, credentials, uid.value);
 			credentials.token = profile.response.token;
 
 			const { data, response } = profile;
-			const key = GBP.hash.profile(uid);
+			const key = GBP.hash.profile(uid.value);
 			if (hashes[key] === response.hash) continue;
 			else hashes[key] = response.hash;
 
-			const current = {
-				uid,
-				timestamp: today,
-				previousId: previous?.id,
-				data,
+			profiles.set(uid.value, data);
 
-				username: data.userName,
-				introduction: data.introduction,
-				rank: data.rank,
-				bandRank: parseBandRank(data.bandRankMap),
-				characterRank: parseCharacterRank(data.userCharacterRankMap),
-				deckRating: parseDeckRating(data.userDeckTotalRatingMap),
-				highScoreRating: parseHighScoreRating(metadata.musics, data.userHighScoreRating),
-				musicClear: parseMusicClear(data.userMusicClearInfoMap),
-				profileCard: data.userProfileSituation?.situationId
+			if (data.userProfileSituation?.situationId)
+				situationIds.add(data.userProfileSituation.situationId);
+
+			// if (data.mainDeckUserSituations?.entries) {
+			// 	const e = data.mainDeckUserSituations.entries;
+			// 	for (let idx = 0; idx < e.length; idx += 1) situationIds.add(e[idx].situationId);
+			// }
+		}
+
+		const [musicsMap, situationsMap] = await Promise.all([
+			redis()
+				.json.get<[MasterMusicGetResponse[]]>(`${GBP.master}:masterMusicList`, "$.entries")
+				.then((res) => new Map(res?.[0].map((music) => [music.id, music]))),
+			redis().json.get<Record<`$.entries.${number}`, [MasterCharacterSituation]>>(
+				`${GBP.master}:masterCharacterSituationMap`,
+				...Array.from(situationIds).map((id) => `$.entries.${id}`),
+			),
+		]);
+
+		const snapshots = [] as NewProfileSnapshot[];
+		const changes = [] as NewProfileSnapshotChange[];
+		for (let idx = 0; idx < uids.length; idx += 1) {
+			const target = uids[idx];
+			const profile = profiles.get(target.value);
+			if (!profile) continue;
+
+			const current = {
+				uid: target.value,
+				timestamp: today,
+				previousId: target.previous?.id,
+				data: profile,
+
+				username: profile.userName,
+				introduction: profile.introduction,
+				rank: profile.rank,
+				bandRank: parseBandRank(profile.bandRankMap),
+				characterRank: parseCharacterRank(profile.userCharacterRankMap),
+				deckRating: parseDeckRating(profile.userDeckTotalRatingMap),
+				highScoreRating: parseHighScoreRating(musicsMap, profile.userHighScoreRating),
+				musicClear: parseMusicClear(profile.userMusicClearInfoMap),
+				profileCard: profile.userProfileSituation?.situationId
 					? {
-							...pick(data.userProfileSituation, ["situationId", "illust"]),
+							...pick(profile.userProfileSituation, ["situationId", "illust"]),
 							resourceSetName:
-								metadata.cards[data.userProfileSituation.situationId].resourceSetName,
+								situationsMap![`$.entries.${profile.userProfileSituation.situationId}`][0]
+									.resourceSetName,
 						}
 					: null,
-				stageChallenge: parseStageChallenge(data.stageChallengeAchievementConditionsMap),
+				stageChallenge: parseStageChallenge(profile.stageChallengeAchievementConditionsMap),
 			} satisfies NewProfileSnapshot;
 			snapshots.push(current);
 
-			if (!previous) continue;
+			if (!target.previous) continue;
 			changes.push(
-				...SnapshotChange.filter((change) => !isEqual(current[change], previous[change])).map(
-					(value) => ({ timestamp: today, uid, value }),
-				),
+				...SnapshotChange.filter(
+					(change) => !isEqual(current[change], target.previous![change]),
+				).map((value) => ({ timestamp: today, uid: target.value, value })),
 			);
 		}
 		if (snapshots.length === 0) return;
@@ -263,7 +271,7 @@ export const parseDeckRating = (raw?: UserDeckTotalRatingMap): ProfileSnapshot["
 };
 
 export const parseHighScoreRating = (
-	musics: z.infer<typeof bestdori.schema.musics>,
+	musicsMap: Map<number, MasterMusicGetResponse>,
 	raw?: UserHighScoreRating,
 ): ProfileSnapshot["highScoreRating"] => {
 	if (!raw) return null;
@@ -290,13 +298,9 @@ export const parseHighScoreRating = (
 						rating: z.number(),
 					})
 					.transform(({ musicId: id, ...value }) => {
-						const music = musics[id];
+						const music = musicsMap.get(id)!;
 						return {
-							music: {
-								id,
-								jacketImage: music.jacketImage[0],
-								title: music.musicTitle[1]!,
-							},
+							music: { id, jacketImage: music.jacketImage, title: music.title },
 							...value,
 						} satisfies HighScoreRating;
 					}),
