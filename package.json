@@ -9,10 +9,13 @@
 		"lint": "oxlint",
 		"lint:fix": "oxlint --fix",
 		"fmt": "oxfmt",
-		"fmt:check": "oxfmt --check"
+		"fmt:check": "oxfmt --check",
+		"check": "bun lint && bun fmt:check",
+		"prepare": "pacwich verify --strict"
 	},
 	"devDependencies": {
 		"oxfmt": "0.78.0",
-		"oxlint": "1.93.0"
+		"oxlint": "1.93.0",
+		"pacwich": "0.7.3"
 	}
 }

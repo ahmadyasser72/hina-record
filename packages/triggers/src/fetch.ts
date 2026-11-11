@@ -5,19 +5,31 @@ import BZip2 from "@digitaldefiance/bzip2-wasm";
 import { GBP, redis } from "@hina-record/shared/db";
 import type { Tracker } from "@hina-record/shared/db/schema";
 import { TrackerRankingProtoSchema } from "@hina-record/shared/db/types";
+import { ClientErrorResponseSchema } from "@hina-record/shared/gbp/gen/error_pb";
 import { UserProfileSchema } from "@hina-record/shared/gbp/gen/profile_pb";
 import { SuiteMasterGetResponseSchema } from "@hina-record/shared/gbp/gen/suite_master_pb";
 import { TrackerSnapshotSchema } from "@hina-record/shared/gbp/gen/tracker_snapshot_pb";
 import { xxhash } from "@hina-record/shared/hash";
-import { AbortTaskRunError, logger, wait } from "@trigger.dev/sdk";
-import { limitAsync, randomInt, retry } from "es-toolkit";
+import { AbortTaskRunError, logger, metadata } from "@trigger.dev/sdk";
+import { limitAsync, retry } from "es-toolkit";
 
 const USER_AGENT = "UnityPlayer/2022.3.62f2 (UnityWebRequest/1.0, libcurl/8.10.1-DEV)";
 const UNITY_VERSION = "2022.3.62f2";
 
-export class MaintenanceError extends Error {
-	constructor() {
-		super("Server Maintenance");
+type GbpErrorKind = "maintenance" | "need-reauth" | "internal-server-error" | "unknown";
+
+export class GbpError extends Error {
+	status: number;
+	kind: GbpErrorKind;
+
+	constructor(url: string, method: string, status: number, message: string) {
+		super(`Error on ${method} @ ${url} (${status}): ${message}`);
+		this.status = status;
+
+		if (status === 503) this.kind = "maintenance";
+		else if (method !== "GET" && status === 403) this.kind = "maintenance";
+		else if (status === 500) this.kind = "internal-server-error";
+		else this.kind = "unknown";
 	}
 }
 
@@ -37,47 +49,58 @@ export const bangDream = {
 		auth: GbpCredentials,
 		body?: Buffer,
 	): Promise<{ bytes: Buffer; headers: Headers }> => {
+		const headers = {
+			accept: "application/octet-stream",
+			"accept-encoding": "deflate, gzip",
+			"content-type": "application/octet-stream",
+			host: "api.app-bang-dream-gbp.com",
+			"user-agent": USER_AGENT,
+			"x-clientplatform": "Android",
+			"x-clientversion": version,
+			"x-signature": auth.signature,
+			"x-token": auth.token,
+			"x-unity-version": UNITY_VERSION,
+		};
+		const request =
+			method === "PUT" ? { body: body?.subarray(0), headers, method } : { headers, method };
+
 		const response = await retry(
-			() =>
-				fetch(url, {
-					body: body?.subarray(0),
-					headers: {
-						accept: "application/octet-stream",
-						"accept-encoding": "deflate, gzip",
-						"content-type": "application/octet-stream",
-						host: "api.app-bang-dream-gbp.com",
-						"user-agent": USER_AGENT,
-						"x-clientplatform": "Android",
-						"x-clientversion": version,
-						"x-signature": auth.signature,
-						"x-token": auth.token,
-						"x-unity-version": UNITY_VERSION,
-					},
-					method,
-				}),
+			async function runFetch() {
+				let response = await fetch(url, request);
+
+				if (!response.ok) {
+					let message: string;
+					try {
+						const bytes = await response.arrayBuffer().then(decrypt);
+						const error = fromBinary(ClientErrorResponseSchema, bytes);
+						message = error.errorMessage;
+					} catch (error) {
+						console.error(`Error parsing ${ClientErrorResponseSchema.typeName}: ${error}`);
+						message = "Unknown error";
+					}
+
+					const error = new GbpError(url, method, response.status, message);
+					metadata.root.append("error", { kind: error.kind, error: error.message });
+
+					if (error.kind === "need-reauth") {
+						headers["x-token"] = await bangDream.refreshToken(version, auth);
+						return runFetch();
+					}
+
+					throw error;
+				}
+
+				return response;
+			},
 			{
 				delay: 500,
-				retries: 2,
-				shouldRetry: (error) => error instanceof TypeError,
+				retries: 4,
+				shouldRetry: (error) =>
+					error instanceof TypeError &&
+					error instanceof GbpError &&
+					error.kind === "internal-server-error",
 			},
 		);
-
-		if (!response.ok) {
-			if (response.status === 503) {
-				await redis().set(GBP.maintenance, true, { ex: 60 * 30 });
-				throw new MaintenanceError();
-			} else if (method !== "GET" && response.status === 403) {
-				auth.token = await bangDream.refreshToken(version, auth);
-				return bangDream.fetch(method, version, url, auth, body);
-			} else if (response.status === 500) {
-				await wait.for({ seconds: randomInt(6, 9) });
-				return bangDream.fetch(method, version, url, auth, body);
-			}
-
-			throw new AbortTaskRunError(
-				`${method}: ${new URL(url).pathname} failed (${response.status})`,
-			);
-		}
 
 		const bytes = await response.arrayBuffer().then(decrypt);
 		return { bytes, headers: response.headers };

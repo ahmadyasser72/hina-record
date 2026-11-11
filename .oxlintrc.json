@@ -1,5 +1,6 @@
 {
 	"$schema": "./node_modules/oxlint/configuration_schema.json",
+	"ignorePatterns": ["packages/shared/src/gbp/gen", "site/worker-configuration.d.ts"],
 	"plugins": ["typescript", "unicorn", "oxc"],
 	"categories": {
 		"correctness": "error"

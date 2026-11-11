@@ -18,6 +18,7 @@ import { bangDream, type GbpCredentials } from "#root/fetch.ts";
 export const updateMasterData = schedules.task({
 	id: "update-master-data",
 	cron: "0 */12 * * *",
+	retry: { maxAttempts: 1 },
 	run: async ({ timestamp }) => {
 		const [credentials, version, hashes] = await redis()
 			.pipeline()

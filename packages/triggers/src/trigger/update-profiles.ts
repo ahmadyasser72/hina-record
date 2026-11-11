@@ -36,6 +36,7 @@ import { bangDream, type GbpCredentials } from "#root/fetch.ts";
 export const updateProfiles = schedules.task({
 	id: "schedule-update-profiles",
 	cron: "0 0 * * *",
+	retry: { maxAttempts: 1 },
 	run: async ({ timestamp }) => {
 		const [players, version] = await redis()
 			.pipeline()

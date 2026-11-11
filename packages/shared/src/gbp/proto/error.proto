@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message ClientErrorResponse {
+    uint32 httpStatus = 1;
+    string errorCode = 2;
+    string errorMessage = 3;
+}

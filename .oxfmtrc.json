@@ -1,6 +1,6 @@
 {
 	"$schema": "./node_modules/oxfmt/configuration_schema.json",
-	"ignorePatterns": ["packages/shared/src/gbp/gen"],
+	"ignorePatterns": ["packages/shared/src/gbp/gen", "site/worker-configuration.d.ts"],
 	"sortImports": true,
 	"svelte": true,
 	"useTabs": true,
