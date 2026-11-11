@@ -59,14 +59,14 @@ export const updateTracker = schedules.task({
 	},
 
 	run: async ({ timestamp }, { ctx }) => {
+		const now = dayjs(timestamp).startOf("minute").add(1, "minute");
+		await wait.until({ date: now.toDate() });
+
 		const [version, maintenance] = await redis().mget<[string | null, true | null]>(
 			GBP.version,
 			GBP.maintenance,
 		);
 		if (!version || maintenance) return;
-
-		const now = dayjs(timestamp).startOf("minute").add(1, "minute");
-		await wait.until({ date: now.toDate() });
 
 		const references = await db().query.trackerReferences.findMany({
 			columns: { kind: true, id: true, type: true, name: true, data: true },
@@ -89,7 +89,7 @@ export const updateTracker = schedules.task({
 							},
 							with: {
 								session: {
-									where: { endAt: { lte: now.subtract(30, "minutes").toDate() } },
+									where: { endAt: { lte: now.add(30, "minutes").toDate() } },
 								},
 							},
 						},
@@ -180,7 +180,7 @@ export const updateTracker = schedules.task({
 					const point = Number(user.point);
 					const pointGain = previous ? point - previous.point : 0;
 
-					let sessionId: Tracker.NewSnapshotTop["sessionId"] = null;
+					let sessionId: Tracker.NewSnapshotTop["sessionId"] = previous?.session?.id;
 					if (musicId === 0 && pointGain > 0) {
 						const session = previous?.session ?? {
 							id: createId(),
@@ -255,17 +255,19 @@ export const updateTracker = schedules.task({
 		const upsert = ({ snapshot, values, sessions }: (typeof top)[number]) =>
 			[
 				db().insert(trackerSnapshots).values(snapshot).returning({ id: trackerSnapshots.id }),
-				db()
-					.insert(trackerSnapshotsTopSessions)
-					.values(sessions)
-					.onConflictDoUpdate({
-						target: trackerSnapshotsTopSessions.id,
-						set: {
-							endAt: sql.raw(`excluded.${trackerSnapshotsTopSessions.endAt.name}`),
-							games: sql.raw(`excluded.${trackerSnapshotsTopSessions.games.name}`),
-							points: sql.raw(`excluded.${trackerSnapshotsTopSessions.points.name}`),
-						},
-					}),
+				sessions.length > 0
+					? db()
+							.insert(trackerSnapshotsTopSessions)
+							.values(sessions)
+							.onConflictDoUpdate({
+								target: trackerSnapshotsTopSessions.id,
+								set: {
+									endAt: sql.raw(`excluded.${trackerSnapshotsTopSessions.endAt.name}`),
+									games: sql.raw(`excluded.${trackerSnapshotsTopSessions.games.name}`),
+									points: sql.raw(`excluded.${trackerSnapshotsTopSessions.points.name}`),
+								},
+							})
+					: db().run(sql`SELECT 1`),
 				db()
 					.insert(trackerSnapshotsTop)
 					.values(values)
@@ -443,18 +445,18 @@ export const updateTrackerProfile = schemaTask({
 
 					const bandId = GbpBandByCharacter[situation.characterId as GbpCharacter];
 					const areaItemsMultiplier = {
-						performance: 1,
-						technique: 1,
-						visual: 1,
+						performance: 100,
+						technique: 100,
+						visual: 100,
 					} satisfies MessageInitShape<typeof MasterSituationParameterSchema>;
 					for (const areaItem of areaItems) {
 						if (
 							areaItem.targetBandIds.includes(bandId) &&
 							areaItem.targetAttributes.includes(situation.attribute)
 						) {
-							areaItemsMultiplier.performance += areaItem.performance / 100;
-							areaItemsMultiplier.technique += areaItem.technique / 100;
-							areaItemsMultiplier.visual += areaItem.visual / 100;
+							if (areaItem.performance) areaItemsMultiplier.performance += areaItem.performance;
+							if (areaItem.technique) areaItemsMultiplier.technique += areaItem.technique;
+							if (areaItem.visual) areaItemsMultiplier.visual += areaItem.visual;
 						}
 					}
 

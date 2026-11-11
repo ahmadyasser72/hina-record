@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file tracker_profile.proto.
  */
 export const file_tracker_profile: GenFile = /*@__PURE__*/
-  fileDesc("ChV0cmFja2VyX3Byb2ZpbGUucHJvdG8iqgEKDlRyYWNrZXJQcm9maWxlEgsKA3VpZBgBIAEoCRIMCgRuYW1lGAIgASgJEg0KBWxldmVsGAMgASgNEhQKDGludHJvZHVjdGlvbhgEIAEoCRIlCgZhdmF0YXIYBSABKAsyFS5UcmFja2VyUHJvZmlsZUF2YXRhchIhCgRiYW5kGAYgASgLMhMuVHJhY2tlclByb2ZpbGVCYW5kEg4KBnRpdGxlcxgHIAMoDSKsAQoUVHJhY2tlclByb2ZpbGVBdmF0YXISEwoLc2l0dWF0aW9uSWQYASABKA0SDgoGaWxsdXN0GAIgASgJEhMKC2NoYXJhY3RlcklkGAMgASgNEg4KBmJhbmRJZBgEIAEoDRIOCgZyYXJpdHkYBSABKA0SEQoJYXR0cmlidXRlGAYgASgJEg4KBnByZWZpeBgHIAEoCRIXCg9yZXNvdXJjZVNldE5hbWUYCCABKAkicgoSVHJhY2tlclByb2ZpbGVCYW5kEgwKBG5hbWUYASABKAkSKgoHbWVtYmVycxgCIAMoCzIZLlRyYWNrZXJQcm9maWxlQmFuZE1lbWJlchIiCglhcmVhSXRlbXMYAyADKAsyDy5NYXN0ZXJBcmVhSXRlbSLRAgoYVHJhY2tlclByb2ZpbGVCYW5kTWVtYmVyEh0KBXZhbHVlGAEgASgLMg4uVXNlclNpdHVhdGlvbhIoCgVwb3dlchgCIAEoCzIZLk1hc3RlclNpdHVhdGlvblBhcmFtZXRlchIbCgVza2lsbBgDIAEoCzIMLk1hc3RlclNraWxsEhEKCXNraWxsTmFtZRgEIAEoCRITCgtjaGFyYWN0ZXJJZBgFIAEoDRIOCgZiYW5kSWQYBiABKA0SDgoGcmFyaXR5GAcgASgNEhEKCWF0dHJpYnV0ZRgIIAEoCRIOCgZwcmVmaXgYCSABKAkSFwoPcmVzb3VyY2VTZXROYW1lGAogASgJEhcKD2V2ZW50UG9pbnRCb251cxgLIAEoDRIyCgpwb3dlckJvbnVzGAwgASgLMh4uVHJhY2tlclByb2ZpbGVCYW5kTWVtYmVyQm9udXMihAIKHVRyYWNrZXJQcm9maWxlQmFuZE1lbWJlckJvbnVzEicKBGNhcmQYCyABKAsyGS5NYXN0ZXJTaXR1YXRpb25QYXJhbWV0ZXISLAoJcG90ZW50aWFsGAwgASgLMhkuTWFzdGVyU2l0dWF0aW9uUGFyYW1ldGVyEioKB21pc3Npb24YDSABKAsyGS5NYXN0ZXJTaXR1YXRpb25QYXJhbWV0ZXISNgoTYXJlYUl0ZW1zTXVsdGlwbGllchgOIAEoCzIZLk1hc3RlclNpdHVhdGlvblBhcmFtZXRlchIoCgVldmVudBgPIAEoCzIZLk1hc3RlclNpdHVhdGlvblBhcmFtZXRlckIXQhNUcmFja2VyUHJvZmlsZVByb3RvUAFiBnByb3RvMw", [file_profile, file_suite_master]);
+  fileDesc("ChV0cmFja2VyX3Byb2ZpbGUucHJvdG8iqgEKDlRyYWNrZXJQcm9maWxlEgsKA3VpZBgBIAEoCRIMCgRuYW1lGAIgASgJEg0KBWxldmVsGAMgASgNEhQKDGludHJvZHVjdGlvbhgEIAEoCRIlCgZhdmF0YXIYBSABKAsyFS5UcmFja2VyUHJvZmlsZUF2YXRhchIhCgRiYW5kGAYgASgLMhMuVHJhY2tlclByb2ZpbGVCYW5kEg4KBnRpdGxlcxgHIAMoDSKsAQoUVHJhY2tlclByb2ZpbGVBdmF0YXISEwoLc2l0dWF0aW9uSWQYASABKA0SDgoGaWxsdXN0GAIgASgJEhMKC2NoYXJhY3RlcklkGAMgASgNEg4KBmJhbmRJZBgEIAEoDRIOCgZyYXJpdHkYBSABKA0SEQoJYXR0cmlidXRlGAYgASgJEg4KBnByZWZpeBgHIAEoCRIXCg9yZXNvdXJjZVNldE5hbWUYCCABKAkicgoSVHJhY2tlclByb2ZpbGVCYW5kEgwKBG5hbWUYASABKAkSKgoHbWVtYmVycxgCIAMoCzIZLlRyYWNrZXJQcm9maWxlQmFuZE1lbWJlchIiCglhcmVhSXRlbXMYAyADKAsyDy5NYXN0ZXJBcmVhSXRlbSLRAgoYVHJhY2tlclByb2ZpbGVCYW5kTWVtYmVyEh0KBXZhbHVlGAEgASgLMg4uVXNlclNpdHVhdGlvbhIoCgVwb3dlchgCIAEoCzIZLk1hc3RlclNpdHVhdGlvblBhcmFtZXRlchIbCgVza2lsbBgDIAEoCzIMLk1hc3RlclNraWxsEhEKCXNraWxsTmFtZRgEIAEoCRITCgtjaGFyYWN0ZXJJZBgFIAEoDRIOCgZiYW5kSWQYBiABKA0SDgoGcmFyaXR5GAcgASgNEhEKCWF0dHJpYnV0ZRgIIAEoCRIOCgZwcmVmaXgYCSABKAkSFwoPcmVzb3VyY2VTZXROYW1lGAogASgJEhcKD2V2ZW50UG9pbnRCb251cxgLIAEoAhIyCgpwb3dlckJvbnVzGAwgASgLMh4uVHJhY2tlclByb2ZpbGVCYW5kTWVtYmVyQm9udXMinQIKHVRyYWNrZXJQcm9maWxlQmFuZE1lbWJlckJvbnVzEiwKBGNhcmQYCyABKAsyHi5NYXN0ZXJTaXR1YXRpb25QYXJhbWV0ZXJGbG9hdBIxCglwb3RlbnRpYWwYDCABKAsyHi5NYXN0ZXJTaXR1YXRpb25QYXJhbWV0ZXJGbG9hdBIvCgdtaXNzaW9uGA0gASgLMh4uTWFzdGVyU2l0dWF0aW9uUGFyYW1ldGVyRmxvYXQSOwoTYXJlYUl0ZW1zTXVsdGlwbGllchgOIAEoCzIeLk1hc3RlclNpdHVhdGlvblBhcmFtZXRlckZsb2F0Ei0KBWV2ZW50GA8gASgLMh4uTWFzdGVyU2l0dWF0aW9uUGFyYW1ldGVyRmxvYXQiVwodTWFzdGVyU2l0dWF0aW9uUGFyYW1ldGVyRmxvYXQSEwoLcGVyZm9ybWFuY2UYAyABKAISEQoJdGVjaG5pcXVlGAQgASgCEg4KBnZpc3VhbBgFIAEoAkIXQhNUcmFja2VyUHJvZmlsZVByb3RvUAFiBnByb3RvMw", [file_profile, file_suite_master]);
 
 /**
  * @generated from message TrackerProfile
@@ -302,7 +302,7 @@ export type TrackerProfileBandMember = Message<"TrackerProfileBandMember"> & {
   resourceSetName: string;
 
   /**
-   * @generated from field: uint32 eventPointBonus = 11;
+   * @generated from field: float eventPointBonus = 11;
    */
   eventPointBonus: number;
 
@@ -367,9 +367,9 @@ export type TrackerProfileBandMemberJson = {
   resourceSetName?: string;
 
   /**
-   * @generated from field: uint32 eventPointBonus = 11;
+   * @generated from field: float eventPointBonus = 11;
    */
-  eventPointBonus?: number;
+  eventPointBonus?: number | "NaN" | "Infinity" | "-Infinity";
 
   /**
    * @generated from field: TrackerProfileBandMemberBonus powerBonus = 12;
@@ -389,29 +389,29 @@ export const TrackerProfileBandMemberSchema: GenMessage<TrackerProfileBandMember
  */
 export type TrackerProfileBandMemberBonus = Message<"TrackerProfileBandMemberBonus"> & {
   /**
-   * @generated from field: MasterSituationParameter card = 11;
+   * @generated from field: MasterSituationParameterFloat card = 11;
    */
-  card?: MasterSituationParameter | undefined;
+  card?: MasterSituationParameterFloat | undefined;
 
   /**
-   * @generated from field: MasterSituationParameter potential = 12;
+   * @generated from field: MasterSituationParameterFloat potential = 12;
    */
-  potential?: MasterSituationParameter | undefined;
+  potential?: MasterSituationParameterFloat | undefined;
 
   /**
-   * @generated from field: MasterSituationParameter mission = 13;
+   * @generated from field: MasterSituationParameterFloat mission = 13;
    */
-  mission?: MasterSituationParameter | undefined;
+  mission?: MasterSituationParameterFloat | undefined;
 
   /**
-   * @generated from field: MasterSituationParameter areaItemsMultiplier = 14;
+   * @generated from field: MasterSituationParameterFloat areaItemsMultiplier = 14;
    */
-  areaItemsMultiplier?: MasterSituationParameter | undefined;
+  areaItemsMultiplier?: MasterSituationParameterFloat | undefined;
 
   /**
-   * @generated from field: MasterSituationParameter event = 15;
+   * @generated from field: MasterSituationParameterFloat event = 15;
    */
-  event?: MasterSituationParameter | undefined;
+  event?: MasterSituationParameterFloat | undefined;
 };
 
 /**
@@ -419,29 +419,29 @@ export type TrackerProfileBandMemberBonus = Message<"TrackerProfileBandMemberBon
  */
 export type TrackerProfileBandMemberBonusJson = {
   /**
-   * @generated from field: MasterSituationParameter card = 11;
+   * @generated from field: MasterSituationParameterFloat card = 11;
    */
-  card?: MasterSituationParameterJson;
+  card?: MasterSituationParameterFloatJson;
 
   /**
-   * @generated from field: MasterSituationParameter potential = 12;
+   * @generated from field: MasterSituationParameterFloat potential = 12;
    */
-  potential?: MasterSituationParameterJson;
+  potential?: MasterSituationParameterFloatJson;
 
   /**
-   * @generated from field: MasterSituationParameter mission = 13;
+   * @generated from field: MasterSituationParameterFloat mission = 13;
    */
-  mission?: MasterSituationParameterJson;
+  mission?: MasterSituationParameterFloatJson;
 
   /**
-   * @generated from field: MasterSituationParameter areaItemsMultiplier = 14;
+   * @generated from field: MasterSituationParameterFloat areaItemsMultiplier = 14;
    */
-  areaItemsMultiplier?: MasterSituationParameterJson;
+  areaItemsMultiplier?: MasterSituationParameterFloatJson;
 
   /**
-   * @generated from field: MasterSituationParameter event = 15;
+   * @generated from field: MasterSituationParameterFloat event = 15;
    */
-  event?: MasterSituationParameterJson;
+  event?: MasterSituationParameterFloatJson;
 };
 
 /**
@@ -450,4 +450,51 @@ export type TrackerProfileBandMemberBonusJson = {
  */
 export const TrackerProfileBandMemberBonusSchema: GenMessage<TrackerProfileBandMemberBonus, {jsonType: TrackerProfileBandMemberBonusJson}> = /*@__PURE__*/
   messageDesc(file_tracker_profile, 4);
+
+/**
+ * @generated from message MasterSituationParameterFloat
+ */
+export type MasterSituationParameterFloat = Message<"MasterSituationParameterFloat"> & {
+  /**
+   * @generated from field: float performance = 3;
+   */
+  performance: number;
+
+  /**
+   * @generated from field: float technique = 4;
+   */
+  technique: number;
+
+  /**
+   * @generated from field: float visual = 5;
+   */
+  visual: number;
+};
+
+/**
+ * @generated from message MasterSituationParameterFloat
+ */
+export type MasterSituationParameterFloatJson = {
+  /**
+   * @generated from field: float performance = 3;
+   */
+  performance?: number | "NaN" | "Infinity" | "-Infinity";
+
+  /**
+   * @generated from field: float technique = 4;
+   */
+  technique?: number | "NaN" | "Infinity" | "-Infinity";
+
+  /**
+   * @generated from field: float visual = 5;
+   */
+  visual?: number | "NaN" | "Infinity" | "-Infinity";
+};
+
+/**
+ * Describes the message MasterSituationParameterFloat.
+ * Use `create(MasterSituationParameterFloatSchema)` to create a new message.
+ */
+export const MasterSituationParameterFloatSchema: GenMessage<MasterSituationParameterFloat, {jsonType: MasterSituationParameterFloatJson}> = /*@__PURE__*/
+  messageDesc(file_tracker_profile, 5);
 

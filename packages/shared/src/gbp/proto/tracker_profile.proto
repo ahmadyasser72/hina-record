@@ -41,14 +41,20 @@ message TrackerProfileBandMember {
   string attribute = 8;
   string prefix = 9;
   string resourceSetName = 10;
-  uint32 eventPointBonus = 11;
+  float eventPointBonus = 11;
   TrackerProfileBandMemberBonus powerBonus = 12;
 }
 
 message TrackerProfileBandMemberBonus {
-  MasterSituationParameter card = 11;
-  MasterSituationParameter potential = 12;
-  MasterSituationParameter mission = 13;
-  MasterSituationParameter areaItemsMultiplier = 14;
-  MasterSituationParameter event = 15;
+  MasterSituationParameterFloat card = 11;
+  MasterSituationParameterFloat potential = 12;
+  MasterSituationParameterFloat mission = 13;
+  MasterSituationParameterFloat areaItemsMultiplier = 14;
+  MasterSituationParameterFloat event = 15;
+}
+
+message MasterSituationParameterFloat {
+  float performance = 3;
+  float technique = 4;
+  float visual = 5;
 }
