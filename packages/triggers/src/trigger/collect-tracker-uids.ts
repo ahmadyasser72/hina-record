@@ -31,7 +31,7 @@ export const collectTracker = schedules.task({
 		const pushEntries = (list?: RankingUserList) => {
 			if (!list) return;
 
-			for (let idx = 0; idx <= list.entries.length; idx += 1) {
+			for (let idx = 0; idx < list.entries.length; idx += 1) {
 				const user = list.entries[idx];
 				if (user.rank <= 100) uids.add(user.uid);
 			}
