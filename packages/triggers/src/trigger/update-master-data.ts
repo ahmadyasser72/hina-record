@@ -76,10 +76,7 @@ export const updateMasterData = schedules.task({
 				const raw = entries[id];
 				const musics = (() => {
 					if ("musics" in raw && raw.musics.length > 0 && musicMap().size > 0) {
-						return raw.musics.map(
-							// biome-ignore lint/style/noNonNullAssertion: safe
-							({ id }) => musicMap().get(id)!,
-						);
+						return raw.musics.map(({ id }) => musicMap().get(id)!);
 					}
 				})();
 

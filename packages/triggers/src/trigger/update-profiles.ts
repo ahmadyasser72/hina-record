@@ -294,7 +294,6 @@ export const parseHighScoreRating = (
 							music: {
 								id,
 								jacketImage: music.jacketImage[0],
-								// biome-ignore lint/style/noNonNullAssertion: safe
 								title: music.musicTitle[1]!,
 							},
 							...value,
