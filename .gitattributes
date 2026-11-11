@@ -1,4 +1,4 @@
 # buf generate
 /packages/shared/src/gbp/gen linguist-generated
-
+# wrangler types
 /site/worker-configuration.d.ts linguist-generated

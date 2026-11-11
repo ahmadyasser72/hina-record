@@ -10,7 +10,7 @@
 		"lint:fix": "oxlint --fix",
 		"fmt": "oxfmt",
 		"fmt:check": "oxfmt --check",
-		"check": "bun lint && bun fmt:check",
+		"check": "bun lint",
 		"prepare": "pacwich verify --strict"
 	},
 	"devDependencies": {

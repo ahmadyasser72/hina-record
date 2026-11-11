@@ -1,0 +1,23 @@
+name: check
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: ./.github/actions/setup-bun
+      - run: bun pacwich run check --include-root
+
+  format:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: ./.github/actions/setup-bun
+      - run: bun fmt:check
