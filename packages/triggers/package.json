@@ -11,14 +11,14 @@
 		"@bufbuild/protobuf": "2.17.0",
 		"@digitaldefiance/bzip2-wasm": "1.1.1",
 		"@hina-record/shared": "workspace:*",
-		"@trigger.dev/sdk": "4.8.4",
+		"@trigger.dev/sdk": "4.8.5",
 		"drizzle-orm": "1.0.0-rc.5-ab785fc",
 		"es-toolkit": "1.53.2",
 		"xxhash-wasm": "1.1.0",
 		"zod": "4.6.7"
 	},
 	"devDependencies": {
-		"@trigger.dev/build": "4.8.4",
+		"@trigger.dev/build": "4.8.5",
 		"@types/bun": "1.4.4",
 		"@types/node": "26.6.6",
 		"typescript": "7.0.2"
