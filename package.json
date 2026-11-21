@@ -14,8 +14,8 @@
 		"prepare": "pacwich verify --strict"
 	},
 	"devDependencies": {
-		"oxfmt": "0.78.0",
-		"oxlint": "1.93.0",
+		"oxfmt": "0.79.0",
+		"oxlint": "1.94.0",
 		"pacwich": "0.7.3"
 	}
 }
